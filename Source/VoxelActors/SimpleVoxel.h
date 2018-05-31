@@ -54,11 +54,10 @@ protected:
 	bool CheckIgTri(int a, int b);
 	int SegFromI(int a, int b);
 
-	TArray<FVector> vert;
-	TArray<Seg_3> seg;
-	TArray<int> safe, ignore;
-	TArray<Tri_3> tri;
-	int num_v, num_s, num_t;
+	TArray<FVector> verts;
+	TArray<int> safes, ignores;
+	TArray<Seg_3> segs;
+	int num_v;
 
 	TArray<int32> GetTris();
 	TArray<FVector2D> GetUV(TArray<FVector> pos, FVector2D center, FVector2D uv_range, FVector2D point_range);
