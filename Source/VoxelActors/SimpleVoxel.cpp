@@ -10,7 +10,10 @@ ASimpleVoxel::ASimpleVoxel()
 
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	verts = { FVector(0,0,0), FVector(10,0,0), FVector(10,10,0), FVector(0,10,0), FVector(0,0,10), FVector(10,0,10), FVector(10,10,10), FVector(0,10,10) };
+	//verts = { FVector(0,0,0), FVector(10,0,0), FVector(10,10,0), FVector(0,10,0), FVector(0,0,10), FVector(10,0,10), FVector(10,10,10), FVector(0,10,10) };
+	//verts = { FVector(0,0,0), FVector(10,0,0), FVector(5,5,0), FVector(0,0,10), FVector(10,0,10), FVector(5,5,10) };
+	verts = { FVector(0,-20,0), FVector(-19,-6,0), FVector(-12,16,0), FVector(12,16,0), FVector(19,-6,0), FVector(0,-20,20), FVector(-19,-6,20), FVector(-12,16,20), FVector(12,16,20), FVector(19,-6,20) };
+	//verts = { 20 * FVector(1,1,1), 20 * FVector(1,1,-1), 20 * FVector(1,-1,1), 20 * FVector(1,-1,-1), 20 * FVector(-1,1,1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(-1,-1,-1), 20 * FVector(0,1.618,1 / 1.618), 20 * FVector(0,1.618,-1 / 1.618), 20 * FVector(0,-1.618,1 / 1.618),20 * FVector(0,-1.618,-1 / 1.618),20 * FVector(1 / 1.618,0,1.618), 20 * FVector(1 / 1.618,0,-1.618),20 * FVector(-1 / 1.618,0,1.618),20 * FVector(-1 / 1.618,0,-1.618),20 * FVector(1.618,1 / 1.618,0),20 * FVector(1.618,-1 / 1.618,0),20 * FVector(-1.618,1 / 1.618,0),20 * FVector(-1.618,-1 / 1.618, 0) };
 	num_v = verts.Num();
 
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("VoxelMesh"));
@@ -32,7 +35,7 @@ bool ASimpleVoxel::Overlap(Seg_3 seg1, Seg_3 seg2)
 	FVector int1, int2;
 	FMath::SegmentDistToSegmentSafe(seg1.vert[0], seg1.vert[1], seg2.vert[0], seg2.vert[1], int1, int2);
 
-	if ((int1 - int2).Size() > 0.000001)
+	if ((int1 - int2).Size() > 0.00001)
 		return false;
 	if (int1 == seg1.vert[0] || int1 == seg1.vert[1])
 		return false;
@@ -243,10 +246,14 @@ TArray<FLinearColor> ASimpleVoxel::GetColors()
 
 void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 {
-	voxel.uvs = GetUV(voxel.verts, uv_center, FVector2D(0.0625, 0.0625), FVector2D(10, 10));
+	voxel.uvs = GetUV(voxel.verts, uv_center, FVector2D(0.0625, 0.0625), FVector2D(50, 50));
 	mesh->CreateMeshSection_LinearColor(0, voxel.verts, voxel.tris, voxel.normals, voxel.uvs, voxel.colors, voxel.tans, true);
-	mesh->ContainsPhysicsTriMeshData(true);
-	mesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
+
+	mesh->bUseComplexAsSimpleCollision = false;
+	mesh->AddCollisionConvexMesh(voxel.verts);
+
+	mesh->SetSimulatePhysics(true);
+	mesh->SetEnableGravity(true);
 }
 
 // Called when the game starts or when spawned
