@@ -21,7 +21,6 @@ struct G_Vox {
 struct Tri_3 {
 	FVector vert[3];
 	int idx[3];
-	bool use, ignore;
 };
 
 struct Seg_3 {

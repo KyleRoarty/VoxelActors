@@ -32,7 +32,7 @@ bool ASimpleVoxel::Overlap(Seg_3 seg1, Seg_3 seg2)
 	FVector int1, int2;
 	FMath::SegmentDistToSegmentSafe(seg1.vert[0], seg1.vert[1], seg2.vert[0], seg2.vert[1], int1, int2);
 
-	if (int1 != int2)
+	if ((int1 - int2).Size() > 0.000001)
 		return false;
 	if (int1 == seg1.vert[0] || int1 == seg1.vert[1])
 		return false;
@@ -117,8 +117,6 @@ TArray<int32> ASimpleVoxel::GetTris()
 	Seg_3 seg_tmp;
 	Tri_3 tri_tmp;
 	TArray<int> *tri_in_seg;
-	int num_t_use = 0;
-	int tps, ips;
 	int num_s, num_t;
 	TArray<Tri_3> tris;
 
@@ -175,8 +173,6 @@ TArray<int32> ASimpleVoxel::GetTris()
 
 	UE_LOG(LogTemp, Warning, TEXT("Num tri's: %d"), num_t);
 
-	tri_tmp.use = false;
-	tri_tmp.ignore = false;
 	int currTri = 0;
 	for (int i = 0; i < num_v; i++) {
 		for (int j = i + 1; j < num_v; j++) {
@@ -203,63 +199,13 @@ TArray<int32> ASimpleVoxel::GetTris()
 		UE_LOG(LogTemp, Warning, TEXT("TRI Actual: %d; Expected: %d"), currTri, num_t);
 	}
 
-	for (int i = 0; i < num_s; i++) {
-		if (tri_in_seg[i].Num() != 2)
-			continue;
-		UE_LOG(LogTemp, Warning, TEXT("SEG %d (%d %d) has 2 tri: %d, %d"), i, segs[i].idx[0], segs[i].idx[1], tri_in_seg[i][0], tri_in_seg[i][1]);
-		for (int tri_idx : tri_in_seg[i])
-			tris[tri_idx].use = true;
-	}
-
-	for (Tri_3 tri : tris)
-		if (tri.use)
-			num_t_use++;
-
-	while (num_t_use != (num_v - 2) * 2) {
-		for (int i = 0; i < num_s; i++) {
-			tps = 0;
-			ips = 0;
-			if (tri_in_seg[i].Num() == 2 || ignores.Contains(i))
-				continue;
-
-			for (int tri_idx : tri_in_seg[i]) {
-				if (tris[tri_idx].use)
-					tps++;
-				if (tris[tri_idx].ignore)
-					ips++;
-			}
-			UE_LOG(LogTemp, Warning, TEXT("seg %d (%d %d): tps %d; ips %d"), i, segs[i].idx[0], segs[i].idx[1], tps, ips);
-
-			if (tps < 2 && tps != 0)
-				for (int tri_idx : tri_in_seg[i])
-					if (!tris[tri_idx].ignore)
-						tris[tri_idx].use = true;
-			if (ips < (tri_in_seg[i].Num() - 2))
-				for (int tri_idx : tri_in_seg[i])
-					if (!tris[tri_idx].use)
-						tris[tri_idx].ignore = true;
-			if (ips > (tri_in_seg[i].Num() - 2))
-				for (int tri_idx : tri_in_seg[i])
-					tris[tri_idx].ignore = false;
-			if (tps > 2)
-				for (int tri_idx : tri_in_seg[i])
-					tris[tri_idx].use = false;
-		}
-		num_t_use = 0;
-		for (Tri_3 tri : tris)
-			if (tri.use)
-				num_t_use++;
-	}
-
 	UE_LOG(LogTemp, Warning, TEXT("Use these triangles: "), tris.Num());
 	for (Tri_3 tri : tris)
-		if (tri.use)
-			UE_LOG(LogTemp, Warning, TEXT("(%d %d %d)"), tri.idx[0], tri.idx[1], tri.idx[2]);
+		UE_LOG(LogTemp, Warning, TEXT("(%d %d %d)"), tri.idx[0], tri.idx[1], tri.idx[2]);
 
 	TArray<int32> ret_tris;
 	for (Tri_3 tri : tris)
-		if(tri.use)
-			ret_tris.Append({ tri.idx[0], tri.idx[1], tri.idx[2], tri.idx[2], tri.idx[1], tri.idx[0] });
+		ret_tris.Append({ tri.idx[0], tri.idx[1], tri.idx[2], tri.idx[2], tri.idx[1], tri.idx[0] });
 	return ret_tris;
 }
 
@@ -274,7 +220,7 @@ TArray<FVector2D> ASimpleVoxel::GetUV(TArray<FVector> pos, FVector2D center, FVe
 TArray<FVector> ASimpleVoxel::GetNormals()
 {
 	TArray<FVector> ret_norms;
-	for (int i = 0; i < this->num_v; i++)
+	for (int i = 0; i < num_v; i++)
 		ret_norms.Emplace(FVector(0));
 	return ret_norms;
 }
@@ -282,7 +228,7 @@ TArray<FVector> ASimpleVoxel::GetNormals()
 TArray<FProcMeshTangent> ASimpleVoxel::GetTangents()
 {
 	TArray<FProcMeshTangent> ret_tans;
-	for (int i = 0; i < this->num_v; i++)
+	for (int i = 0; i < num_v; i++)
 		ret_tans.Emplace(FProcMeshTangent());
 	return ret_tans;
 }
@@ -290,7 +236,7 @@ TArray<FProcMeshTangent> ASimpleVoxel::GetTangents()
 TArray<FLinearColor> ASimpleVoxel::GetColors()
 {
 	TArray<FLinearColor> ret_colors;
-	for (int i = 0; i < this->num_v; i++)
+	for (int i = 0; i < num_v; i++)
 		ret_colors.Emplace(FLinearColor(ForceInitToZero));
 	return ret_colors;
 }
