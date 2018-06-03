@@ -57,6 +57,7 @@ protected:
 	TArray<int> safes, ignores;
 	TArray<Seg_3> segs;
 	int num_v;
+	bool mesh_made;
 
 	TArray<int32> GetTris();
 	TArray<FVector2D> GetUV(TArray<FVector> pos, FVector2D center, FVector2D uv_range, FVector2D point_range);

@@ -15,6 +15,7 @@ ASimpleVoxel::ASimpleVoxel()
 	verts = { FVector(0,-20,0), FVector(-19,-6,0), FVector(-12,16,0), FVector(12,16,0), FVector(19,-6,0), FVector(0,-20,20), FVector(-19,-6,20), FVector(-12,16,20), FVector(12,16,20), FVector(19,-6,20) };
 	//verts = { 20 * FVector(1,1,1), 20 * FVector(1,1,-1), 20 * FVector(1,-1,1), 20 * FVector(1,-1,-1), 20 * FVector(-1,1,1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(-1,-1,-1), 20 * FVector(0,1.618,1 / 1.618), 20 * FVector(0,1.618,-1 / 1.618), 20 * FVector(0,-1.618,1 / 1.618),20 * FVector(0,-1.618,-1 / 1.618),20 * FVector(1 / 1.618,0,1.618), 20 * FVector(1 / 1.618,0,-1.618),20 * FVector(-1 / 1.618,0,1.618),20 * FVector(-1 / 1.618,0,-1.618),20 * FVector(1.618,1 / 1.618,0),20 * FVector(1.618,-1 / 1.618,0),20 * FVector(-1.618,1 / 1.618,0),20 * FVector(-1.618,-1 / 1.618, 0) };
 	num_v = verts.Num();
+	mesh_made = false;
 
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("VoxelMesh"));
 	RootComponent = mesh;
@@ -246,7 +247,7 @@ TArray<FLinearColor> ASimpleVoxel::GetColors()
 
 void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 {
-	voxel.uvs = GetUV(voxel.verts, uv_center, FVector2D(0.0625, 0.0625), FVector2D(50, 50));
+	voxel.uvs = GetUV(voxel.verts, uv_center, FVector2D(0.0625, 0.0625), FVector2D(1000, 1000));
 	mesh->CreateMeshSection_LinearColor(0, voxel.verts, voxel.tris, voxel.normals, voxel.uvs, voxel.colors, voxel.tans, true);
 
 	mesh->bUseComplexAsSimpleCollision = false;
@@ -254,6 +255,8 @@ void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 
 	mesh->SetSimulatePhysics(true);
 	mesh->SetEnableGravity(true);
+
+	mesh_made = true;
 }
 
 // Called when the game starts or when spawned
@@ -267,7 +270,22 @@ void ASimpleVoxel::BeginPlay()
 // Called every frame
 void ASimpleVoxel::Tick(float DeltaTime)
 {
+	static float time = 0;
+	TArray<FVector> new_verts;
+
 	Super::Tick(DeltaTime);
 
+	new_verts.Append(voxel.verts);
+	time += DeltaTime;
+
+	if (mesh_made) {
+		for (int i = 0; i < voxel.verts.Num(); i++) {
+			new_verts[i] = FMath::InterpSinInOut(voxel.verts[i], voxel.verts[i] * 2, abs(sinf(time)));
+		}
+	
+		mesh->UpdateMeshSection_LinearColor(0, new_verts, voxel.normals, voxel.uvs, voxel.colors, voxel.tans);
+
+
+	}
 }
 
