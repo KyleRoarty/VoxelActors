@@ -52,6 +52,9 @@ protected:
 	void ResolveOverlap(int a, int b);
 	bool CheckIgTri(int a, int b);
 	int SegFromI(int a, int b);
+	int SegFromI(int a, int b, int n);
+	int TriFromI(int a, int b, int c);
+	TArray<int32> PlaneTris(TArray<int> points);
 
 	TArray<FVector> verts;
 	TArray<int> safes, ignores;
