@@ -10,32 +10,10 @@ ASimpleVoxel::ASimpleVoxel()
 
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-	FVector trans = FVector(0);
-
 	//verts = { FVector(0,0,0), FVector(10,0,0), FVector(10,10,0), FVector(0,10,0), FVector(0,0,10), FVector(10,0,10), FVector(10,10,10), FVector(0,10,10) };
 	//verts = { FVector(0,0,0), FVector(10,0,0), FVector(5,5,0), FVector(0,0,10), FVector(10,0,10), FVector(5,5,10) };
-	//verts = { FVector(0,-20,0), FVector(-19,-6,0), FVector(-12,16,0), FVector(12,16,0), FVector(19,-6,0), FVector(0,-20,20), FVector(-19,-6,20), FVector(-12,16,20), FVector(12,16,20), FVector(19,-6,20) };
-	verts = { 20 * FVector(1,1,1), 20 * FVector(1,1,-1), 20 * FVector(1,-1,1), 20 * FVector(1,-1,-1), 20 * FVector(-1,1,1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(-1,-1,-1), 20 * FVector(0,1.618,1 / 1.618), 20 * FVector(0,1.618,-1 / 1.618), 20 * FVector(0,-1.618,1 / 1.618),20 * FVector(0,-1.618,-1 / 1.618),20 * FVector(1 / 1.618,0,1.618), 20 * FVector(1 / 1.618,0,-1.618),20 * FVector(-1 / 1.618,0,1.618),20 * FVector(-1 / 1.618,0,-1.618),20 * FVector(1.618,1 / 1.618,0),20 * FVector(1.618,-1 / 1.618,0),20 * FVector(-1.618,1 / 1.618,0),20 * FVector(-1.618,-1 / 1.618, 0) };
-
-
-	for (FVector v : verts) {
-		if (v.X < trans.X)
-			trans.X = v.X;
-		if (v.Y < trans.Y)
-			trans.Y = v.Y;
-		if (v.Z < trans.Z)
-			trans.Z = v.Z;
-	}
-
-	verts.Sort([trans](const FVector A,  const FVector B){
-		return (A-trans).Size() < (B-trans).Size();
-	});
-
-	for (FVector v : verts) {
-		sort_verts.Emplace(v - trans);
-	}
-
+	verts = { FVector(0,-20,0), FVector(-19,-6,0), FVector(-12,16,0), FVector(12,16,0), FVector(19,-6,0), FVector(0,-20,20), FVector(-19,-6,20), FVector(-12,16,20), FVector(12,16,20), FVector(19,-6,20) };
+	//verts = { 20 * FVector(1,1,1), 20 * FVector(1,1,-1), 20 * FVector(1,-1,1), 20 * FVector(1,-1,-1), 20 * FVector(-1,1,1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(-1,-1,-1), 20 * FVector(0,1.618,1 / 1.618), 20 * FVector(0,1.618,-1 / 1.618), 20 * FVector(0,-1.618,1 / 1.618),20 * FVector(0,-1.618,-1 / 1.618),20 * FVector(1 / 1.618,0,1.618), 20 * FVector(1 / 1.618,0,-1.618),20 * FVector(-1 / 1.618,0,1.618),20 * FVector(-1 / 1.618,0,-1.618),20 * FVector(1.618,1 / 1.618,0),20 * FVector(1.618,-1 / 1.618,0),20 * FVector(-1.618,1 / 1.618,0),20 * FVector(-1.618,-1 / 1.618, 0) };
 	num_v = verts.Num();
 	mesh_made = false;
 
@@ -53,114 +31,186 @@ ASimpleVoxel::ASimpleVoxel()
 	mesh->SetMaterial(0, MyMaterial);
 }
 
-int ASimpleVoxel::SegFromI(int a, int b)
+bool ASimpleVoxel::Overlap(Seg_3 seg1, Seg_3 seg2)
 {
-	return SegFromI(a, b, num_v);
+	FVector int1, int2;
+	FMath::SegmentDistToSegmentSafe(seg1.vert[0], seg1.vert[1], seg2.vert[0], seg2.vert[1], int1, int2);
+
+	if ((int1 - int2).Size() > 0.00001)
+		return false;
+	if (int1 == seg1.vert[0] || int1 == seg1.vert[1])
+		return false;
+	if (int2 == seg2.vert[0] || int2 == seg2.vert[1])
+		return false;
+
+	return true;
 }
 
-int ASimpleVoxel::SegFromI(int a, int b, int n)
+void ASimpleVoxel::ResolveOverlap(int a, int b)
 {
-	return a*n - a*(a + 1) / 2 + b - (a + 1);
+	int idx[2] = { a, b };
+	bool safe_s[2] = { false, false };
+	bool ignore_s[2] = { false, false };
+
+	for (int i = 0; i < 2; i++) {
+		if (safes.Contains(idx[i]))
+			safe_s[i] = true;
+		if (ignores.Contains(idx[i]))
+			ignore_s[i] = true;
+	}
+
+	if ((safe_s[0] && ignore_s[0]) || (safe_s[1] && ignore_s[1]))
+		return;
+	if ((safe_s[0] && ignore_s[1]) || (ignore_s[0] && safe_s[1]) || (ignore_s[0] && ignore_s[1]))
+		return;
+
+	if (safe_s[0] && safe_s[1]) {
+		safes.Remove(idx[1]);
+		ignores.Emplace(idx[1]);
+		return;
+	}
+
+	for (int i = 0; i < 2; i++)
+	{
+		if (safe_s[i]) {
+			ignores.Emplace(idx[i]);
+			return;
+		}
+		if (ignore_s[i]) {
+			safes.Emplace(idx[i]);
+			return;
+		}
+	}
+
+	ignores.Emplace(idx[0]);
+	safes.Emplace(idx[1]);
+	return;		
 }
 
-
-//a < b < c
-//Indexes linear array of triangles from the three points defining the triangle
-int ASimpleVoxel::TriFromI(int a, int b, int c) {
-	return TriFromI(a, b, c, num_v);
-}
-
-int ASimpleVoxel::TriFromI(int a, int b, int c, int n) {
-	return ((n - 2)*(n - 1)*n - (n - 2 - a)*(n - 1 - a)*(n - a)) / 6 + ((n - 2 - a)*(n - 1 - a) - (n - 1 - b)*(n - b)) / 2 + c - (b + 1);
-}
-
-TArray<int32> ASimpleVoxel::GetTris()
+bool ASimpleVoxel::CheckIgTri(int a, int b)
 {
-	TArray<bool> checked_tri;
-	TArray<int32> ret_tris;
-	int num_t;
+	int idx = -1;
 
-
-	num_t = num_v*(num_v - 1)*(num_v - 2) / 6;
-	checked_tri.Init(false, num_t);
-
-
-	TArray<int> in_plane;
-	FVector p_norm;
-	bool pos, neg;
-	float res;
-
-	for (int i = 0; i < num_v; i++) {
-		for (int j = i + 1; j < num_v; j++) {
-			for (int k = j + 1; k < num_v; k++) {
-				if (checked_tri[TriFromI(i, j, k)]) {
-					//UE_LOG(LogTemp, Warning, TEXT("Skipping %d %d %d"), i, j, k);
-					continue;
-				}
-
-				pos = neg = false;
-				in_plane.Empty();
-				in_plane.Append({ i, j, k });
-				p_norm = FVector::CrossProduct(verts[k] - verts[i], verts[j] - verts[i]);
-
-				for (int l = 0; l < num_v; l++) {
-					if (l == i || l == j || l == k)
-						continue;
-					res = FVector::PointPlaneDist(verts[l], verts[i], p_norm);
-					if (FMath::Abs(res) < 1)
-						in_plane.Emplace(l);
-					else if (res >= 0) pos = true;
-					else if (res < 0) neg = true;
-
-				}
-
-				in_plane.Sort();
-				
-				for (int l = 0; l < in_plane.Num(); l++) {
-					for (int m = l + 1; m < in_plane.Num(); m++) {
-						for (int n = m + 1; n < in_plane.Num(); n++) {
-							checked_tri[TriFromI(in_plane[l], in_plane[m], in_plane[n])] = true;
-						}
-					}
-				}
-
-				if (pos && neg) {
-					//UE_LOG(LogTemp, Warning, TEXT("Pos and neg true! %d %d %d"), i, j, k);
-					continue;
-				}
-
-				UE_LOG(LogTemp, Warning, TEXT("Generating triangles for %d %d %d"), i, j, k);
-				for (int i : in_plane)
-					UE_LOG(LogTemp, Warning, TEXT("%d"), i);
-
-				ret_tris.Append(SimpleTris(in_plane));
-				
-
+	for (int i = 0; i < 2; i++) {
+		for (int j = 0; j < 2; j++) {
+			if (segs[a].vert[i] == segs[b].vert[j]) {
+				idx = (segs[a].idx[(i + 1) % 2] < segs[b].idx[(j + 1) % 2])?
+					   SegFromI(segs[a].idx[(i + 1) % 2], segs[b].idx[(j + 1) % 2]):
+					   SegFromI(segs[b].idx[(j + 1) % 2], segs[a].idx[(i + 1) % 2]);
 			}
 		}
 	}
 
-	return ret_tris;
+	if (idx == -1 || idx <= b)
+		return false;
+
+	if (ignores.Contains(idx))
+		return true;
+
+	return false;
 }
 
-TArray<int32> ASimpleVoxel::SimpleTris(TArray<int> points) {
-	TArray<int32> ret;
+int ASimpleVoxel::SegFromI(int a, int b)
+{
+	return a*num_v - a*(a + 1) / 2 + b - (a + 1);
+}
 
-	//First, second distances
-	float f_dist, s_dist;
+TArray<int32> ASimpleVoxel::GetTris()
+{
+	int iter;
+	Seg_3 seg_tmp;
+	Tri_3 tri_tmp;
+	TArray<int> *tri_in_seg;
+	int num_s, num_t;
+	TArray<Tri_3> tris;
 
-	while (points.Num() >= 3) {
-		UE_LOG(LogTemp, Warning, TEXT("Adding tri %d %d %d"), points[0], points[1], points[2]);
-		ret.Append({ points[0], points[1], points[2], points[2], points[1], points[0] });
-		f_dist = (sort_verts[points[1]] - sort_verts[points[0]]).Size() + (sort_verts[points[2]] - sort_verts[points[0]]).Size();
-		s_dist = (sort_verts[points[0]] - sort_verts[points[1]]).Size() + (sort_verts[points[2]] - sort_verts[points[1]]).Size();
-		if (f_dist < s_dist)
-			points.RemoveAt(0);
-		else
-			points.RemoveAt(1);
+
+	num_s = num_v*(num_v - 1) / 2;
+	num_t = num_v*(num_v - 1)*(num_v - 2) / 6;
+
+	tri_in_seg = new TArray<int>[num_s];
+
+	iter = 0;
+	for (int i = 0; i < num_v; i++) {
+		for (int j = i + 1; j < num_v; j++) {
+			for (int k = 0, vfs[2] = { i, j }; k < 2; k++) {
+				seg_tmp.vert[k] = verts[vfs[k]];
+				seg_tmp.idx[k] = vfs[k];
+			}
+			segs.Emplace(seg_tmp);
+		}
 	}
 
-	return ret;
+	if (segs.Num() != num_s) {
+		//Do something
+		UE_LOG(LogTemp, Warning, TEXT("SEGS: Actual: %d, Expected: %d"), segs.Num(), num_s);
+	}
+
+	for (int i = 0; i < num_s; i++) {
+		for (int j = i + 1; j < num_s; j++) {
+			if (Overlap(segs[i], segs[j])) {
+				ResolveOverlap(i, j);
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Ignore:"));
+	for (int ignore : ignores)
+		UE_LOG(LogTemp, Warning, TEXT("%d (%d %d)"), ignore, segs[ignore].idx[0], segs[ignore].idx[1]);
+
+	num_t -= ignores.Num()*(num_v - 2);
+
+	for (int i = 0, tmp = 0; i < num_v; i++) {
+		tmp = 0;
+		for (int ignore : ignores) {
+			if (segs[ignore].vert[0] == verts[i] || segs[ignore].vert[1] == verts[i])
+				tmp++;
+		}
+		num_t += ((tmp)*(tmp - 1) / 2);
+	}
+
+
+	for (int i = 0; i < ignores.Num(); i++)
+		for (int j = i + 1; j < ignores.Num(); j++)
+			if (CheckIgTri(ignores[i], ignores[j]))
+				num_t--;
+
+	UE_LOG(LogTemp, Warning, TEXT("Num tri's: %d"), num_t);
+
+	int currTri = 0;
+	for (int i = 0; i < num_v; i++) {
+		for (int j = i + 1; j < num_v; j++) {
+			if (ignores.Contains(SegFromI(i, j)))
+				continue;
+			for (int k = j + 1; k < num_v; k++) {
+				if (ignores.Contains(SegFromI(i, k)) || ignores.Contains(SegFromI(j, k)))
+					continue;
+				for (int l = 0, m = 0, vft[3] = { i,j,k }; l < 3; l++)
+				{
+					tri_tmp.vert[l] = verts[vft[l]];
+					tri_tmp.idx[l] = vft[l];
+					m = (vft[l] < vft[(l + 1) % 3]) ? SegFromI(vft[l], vft[(l + 1) % 3]) : SegFromI(vft[(l + 1) % 3], vft[l]);
+					tri_in_seg[m].Emplace(currTri);
+				}
+				tris.Emplace(tri_tmp);
+				currTri++;
+			}
+		}
+	}
+
+	if (currTri != num_t) {
+		//Do something
+		UE_LOG(LogTemp, Warning, TEXT("TRI Actual: %d; Expected: %d"), currTri, num_t);
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Use these triangles: "), tris.Num());
+	for (Tri_3 tri : tris)
+		UE_LOG(LogTemp, Warning, TEXT("(%d %d %d)"), tri.idx[0], tri.idx[1], tri.idx[2]);
+
+	TArray<int32> ret_tris;
+	for (Tri_3 tri : tris)
+		ret_tris.Append({ tri.idx[0], tri.idx[1], tri.idx[2], tri.idx[2], tri.idx[1], tri.idx[0] });
+	return ret_tris;
 }
 
 TArray<FVector2D> ASimpleVoxel::GetUV(TArray<FVector> pos, FVector2D center, FVector2D uv_range, FVector2D point_range)
@@ -198,8 +248,8 @@ TArray<FLinearColor> ASimpleVoxel::GetColors()
 void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 {
 	voxel.uvs = GetUV(voxel.verts, uv_center, FVector2D(0.0625, 0.0625), FVector2D(1000, 1000));
-	mesh->CreateMeshSection_LinearColor(0, voxel.verts, voxel.tris, voxel.normals, voxel.uvs, voxel.colors, voxel.tans, false);
-	
+	mesh->CreateMeshSection_LinearColor(0, voxel.verts, voxel.tris, voxel.normals, voxel.uvs, voxel.colors, voxel.tans, true);
+
 	mesh->bUseComplexAsSimpleCollision = false;
 	mesh->AddCollisionConvexMesh(voxel.verts);
 
@@ -222,25 +272,20 @@ void ASimpleVoxel::Tick(float DeltaTime)
 {
 	static float time = 0;
 	TArray<FVector> new_verts;
-	TArray<TArray<FVector>> nv_arr;
 
 	Super::Tick(DeltaTime);
 
 	new_verts.Append(voxel.verts);
 	time += DeltaTime;
 
-	/*if (mesh_made) {
+	if (mesh_made) {
 		for (int i = 0; i < voxel.verts.Num(); i++) {
-			new_verts[i] = FMath::InterpSinInOut(voxel.verts[i], 2 * voxel.verts[i], abs(sinf(time)));
+			new_verts[i] = FMath::InterpSinInOut(voxel.verts[i], voxel.verts[i] * 2, abs(sinf(time)));
 		}
-
+	
 		mesh->UpdateMeshSection_LinearColor(0, new_verts, voxel.normals, voxel.uvs, voxel.colors, voxel.tans);
-		nv_arr.Emplace(new_verts);
-		mesh->SetCollisionConvexMeshes(nv_arr);
-		//		mesh->ClearCollisionConvexMeshes();
-		//		mesh->AddCollisionConvexMesh(new_verts);
+
 
 	}
-	*/
 }
 
