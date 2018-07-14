@@ -48,27 +48,26 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	bool Overlap(Seg_3 seg1, Seg_3 seg2);
-	void ResolveOverlap(int a, int b);
-	bool CheckIgTri(int a, int b);
 	int SegFromI(int a, int b);
 	int SegFromI(int a, int b, int n);
 	int TriFromI(int a, int b, int c);
-	TArray<int32> PlaneTris(TArray<int> points);
-
-	TArray<FVector> verts;
-	TArray<int> safes, ignores;
-	TArray<Seg_3> segs;
-	int num_v;
-	bool mesh_made;
+	int TriFromI(int a, int b, int c, int n);
 
 	TArray<int32> GetTris();
+	TArray<int32> SimpleTris(TArray<int> points);
+
 	TArray<FVector2D> GetUV(TArray<FVector> pos, FVector2D center, FVector2D uv_range, FVector2D point_range);
 	TArray<FVector> GetNormals();
 	TArray<FProcMeshTangent> GetTangents();
 	TArray<FLinearColor> GetColors();
 	
 	void CreateVoxel(FVector2D uv_center);
+	
+	TArray<FVector> verts;
+	TArray<FVector> sort_verts;
+	int num_v;
+	bool mesh_made;
+
 
 public:	
 	// Called every frame
