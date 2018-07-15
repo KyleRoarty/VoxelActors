@@ -4,6 +4,8 @@
 #include "ConstructorHelpers.h"
 #include "Runtime/Engine/Classes/Materials/Material.h"
 
+#define PHI (1+sqrt(5))/2
+
 // Sets default values
 ASimpleVoxel::ASimpleVoxel()
 {
@@ -13,11 +15,13 @@ ASimpleVoxel::ASimpleVoxel()
 
 	FVector trans = FVector(0);
 
-	//verts = { FVector(0,0,0), FVector(10,0,0), FVector(10,10,0), FVector(0,10,0), FVector(0,0,10), FVector(10,0,10), FVector(10,10,10), FVector(0,10,10) };
-	//verts = { FVector(0,0,0), FVector(10,0,0), FVector(5,5,0), FVector(0,0,10), FVector(10,0,10), FVector(5,5,10) };
+	//verts = { 20*FVector(-1,-1,-1), 20*FVector(1,-1,-1), 20*FVector(1,1,-1), 20*FVector(-1,1,-1), 20*FVector(-1,-1,1), 20*FVector(1,-1,1), 20*FVector(1,1,1), 20*FVector(-1,1,1) };
+	//verts = { 20*FVector(-1,-1,-1), 20*FVector(1,-1,-1), 20*FVector(0,0,-1), 20*FVector(-1,-1,1), 20*FVector(1,-1,1), 20*FVector(0,0,1) };
 	//verts = { FVector(0,-20,0), FVector(-19,-6,0), FVector(-12,16,0), FVector(12,16,0), FVector(19,-6,0), FVector(0,-20,20), FVector(-19,-6,20), FVector(-12,16,20), FVector(12,16,20), FVector(19,-6,20) };
-	verts = { 20 * FVector(1,1,1), 20 * FVector(1,1,-1), 20 * FVector(1,-1,1), 20 * FVector(1,-1,-1), 20 * FVector(-1,1,1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(-1,-1,-1), 20 * FVector(0,1.618,1 / 1.618), 20 * FVector(0,1.618,-1 / 1.618), 20 * FVector(0,-1.618,1 / 1.618),20 * FVector(0,-1.618,-1 / 1.618),20 * FVector(1 / 1.618,0,1.618), 20 * FVector(1 / 1.618,0,-1.618),20 * FVector(-1 / 1.618,0,1.618),20 * FVector(-1 / 1.618,0,-1.618),20 * FVector(1.618,1 / 1.618,0),20 * FVector(1.618,-1 / 1.618,0),20 * FVector(-1.618,1 / 1.618,0),20 * FVector(-1.618,-1 / 1.618, 0) };
-
+	verts = { 20 * FVector(1,1,1), 20 * FVector(1,1,-1), 20 * FVector(1,-1,1), 20 * FVector(1,-1,-1), 20 * FVector(-1,1,1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(-1,-1,-1), 20 * FVector(0,PHI,1 / PHI), 20 * FVector(0,PHI,-1 / PHI), 20 * FVector(0,-PHI,1 / PHI),20 * FVector(0,-PHI,-1 / PHI),20 * FVector(1 / PHI,0,PHI), 20 * FVector(1 / PHI,0,-PHI),20 * FVector(-1 / PHI,0,PHI),20 * FVector(-1 / PHI,0,-PHI),20 * FVector(PHI,1 / PHI,0),20 * FVector(PHI,-1 / PHI,0),20 * FVector(-PHI,1 / PHI,0),20 * FVector(-PHI,-1 / PHI, 0) };
+	//verts = { 20 * FVector(0,1,PHI), 20 * FVector(0,1,-PHI), 20 * FVector(0,-1,PHI), 20 * FVector(0,-1,-PHI),
+	//		  20 * FVector(1,PHI,0), 20 * FVector(1,-PHI,0), 20 * FVector(-1,PHI,0), 20 * FVector(-1,-PHI,0),
+	//		  20 * FVector(PHI,0,1), 20 * FVector(PHI,0,-1), 20 * FVector(-PHI,0,1), 20 * FVector(-PHI,0,-1)};
 
 	for (FVector v : verts) {
 		if (v.X < trans.X)
@@ -197,7 +201,7 @@ TArray<FLinearColor> ASimpleVoxel::GetColors()
 
 void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 {
-	voxel.uvs = GetUV(voxel.verts, uv_center, FVector2D(0.0625, 0.0625), FVector2D(1000, 1000));
+	voxel.uvs = GetUV(voxel.verts, uv_center, FVector2D(0.125, 0.125), FVector2D(33, 33));
 	mesh->CreateMeshSection_LinearColor(0, voxel.verts, voxel.tris, voxel.normals, voxel.uvs, voxel.colors, voxel.tans, false);
 	
 	mesh->bUseComplexAsSimpleCollision = false;
@@ -213,7 +217,7 @@ void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 void ASimpleVoxel::BeginPlay()
 {
 	Super::BeginPlay();
-	CreateVoxel(FVector2D(.0625, .0625));
+	CreateVoxel(FVector2D(.25, .25));
 	
 }
 
