@@ -4,10 +4,9 @@
 #include "ConstructorHelpers.h"
 #include "Runtime/Engine/Classes/Materials/Material.h"
 
+
 #define PHI (1+sqrt(5))/2.0
 #define IPHI 2.0/(1+sqrt(5))
-//#define PHI 1.618
-//#define IPHI 1/PHI
 // Sets default values
 ASimpleVoxel::ASimpleVoxel()
 {
