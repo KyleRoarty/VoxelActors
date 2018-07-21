@@ -4,8 +4,9 @@
 #include "ConstructorHelpers.h"
 #include "Runtime/Engine/Classes/Materials/Material.h"
 
-#define PHI (1+sqrt(5))/2
 
+#define PHI (1+sqrt(5))/2.0
+#define IPHI 2.0/(1+sqrt(5))
 // Sets default values
 ASimpleVoxel::ASimpleVoxel()
 {
@@ -18,10 +19,13 @@ ASimpleVoxel::ASimpleVoxel()
 	//verts = { 20*FVector(-1,-1,-1), 20*FVector(1,-1,-1), 20*FVector(1,1,-1), 20*FVector(-1,1,-1), 20*FVector(-1,-1,1), 20*FVector(1,-1,1), 20*FVector(1,1,1), 20*FVector(-1,1,1) };
 	//verts = { 20*FVector(-1,-1,-1), 20*FVector(1,-1,-1), 20*FVector(0,0,-1), 20*FVector(-1,-1,1), 20*FVector(1,-1,1), 20*FVector(0,0,1) };
 	//verts = { FVector(0,-20,0), FVector(-19,-6,0), FVector(-12,16,0), FVector(12,16,0), FVector(19,-6,0), FVector(0,-20,20), FVector(-19,-6,20), FVector(-12,16,20), FVector(12,16,20), FVector(19,-6,20) };
-	verts = { 20 * FVector(1,1,1), 20 * FVector(1,1,-1), 20 * FVector(1,-1,1), 20 * FVector(1,-1,-1), 20 * FVector(-1,1,1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(-1,-1,-1), 20 * FVector(0,PHI,1 / PHI), 20 * FVector(0,PHI,-1 / PHI), 20 * FVector(0,-PHI,1 / PHI),20 * FVector(0,-PHI,-1 / PHI),20 * FVector(1 / PHI,0,PHI), 20 * FVector(1 / PHI,0,-PHI),20 * FVector(-1 / PHI,0,PHI),20 * FVector(-1 / PHI,0,-PHI),20 * FVector(PHI,1 / PHI,0),20 * FVector(PHI,-1 / PHI,0),20 * FVector(-PHI,1 / PHI,0),20 * FVector(-PHI,-1 / PHI, 0) };
-	//verts = { 20 * FVector(0,1,PHI), 20 * FVector(0,1,-PHI), 20 * FVector(0,-1,PHI), 20 * FVector(0,-1,-PHI),
-	//		  20 * FVector(1,PHI,0), 20 * FVector(1,-PHI,0), 20 * FVector(-1,PHI,0), 20 * FVector(-1,-PHI,0),
-	//		  20 * FVector(PHI,0,1), 20 * FVector(PHI,0,-1), 20 * FVector(-PHI,0,1), 20 * FVector(-PHI,0,-1)};
+	/*verts = { 20 * FVector(1,1,1), 20 * FVector(1,1,-1), 20 * FVector(1,-1,1), 20 * FVector(1,-1,-1), 20 * FVector(-1,1,1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(-1,-1,-1),
+			  20 * FVector(0,PHI,IPHI), 20 * FVector(0,PHI,-IPHI), 20 * FVector(0,-PHI,IPHI),20 * FVector(0,-PHI,-IPHI),
+			  20 * FVector(IPHI,0,PHI), 20 * FVector(IPHI,0,-PHI),20 * FVector(-IPHI,0,PHI),20 * FVector(-IPHI,0,-PHI),
+			  20 * FVector(PHI,IPHI,0),20 * FVector(PHI,-IPHI,0),20 * FVector(-PHI,IPHI,0),20 * FVector(-PHI,-IPHI, 0) };*/
+	verts = { 20 * FVector(0,1,PHI), 20 * FVector(0,1,-PHI), 20 * FVector(0,-1,PHI), 20 * FVector(0,-1,-PHI),
+			  20 * FVector(1,PHI,0), 20 * FVector(1,-PHI,0), 20 * FVector(-1,PHI,0), 20 * FVector(-1,-PHI,0),
+			  20 * FVector(PHI,0,1), 20 * FVector(PHI,0,-1), 20 * FVector(-PHI,0,1), 20 * FVector(-PHI,0,-1)};
 
 	for (FVector v : verts) {
 		if (v.X < trans.X)
@@ -54,7 +58,6 @@ ASimpleVoxel::ASimpleVoxel()
 
 	static ConstructorHelpers::FObjectFinder<UMaterial> BlahMaterial(TEXT("Material'/Game/StarterContent/Materials/M_ColorGrid_LowSpec.M_ColorGrid_LowSpec'"));
 	MyMaterial = BlahMaterial.Object;
-	mesh->SetMaterial(0, MyMaterial);
 }
 
 int ASimpleVoxel::SegFromI(int a, int b)
@@ -78,10 +81,10 @@ int ASimpleVoxel::TriFromI(int a, int b, int c, int n) {
 	return ((n - 2)*(n - 1)*n - (n - 2 - a)*(n - 1 - a)*(n - a)) / 6 + ((n - 2 - a)*(n - 1 - a) - (n - 1 - b)*(n - b)) / 2 + c - (b + 1);
 }
 
-TArray<int32> ASimpleVoxel::GetTris()
+TArray<TArray<int32>> ASimpleVoxel::GetTris()
 {
 	TArray<bool> checked_tri;
-	TArray<int32> ret_tris;
+	TArray<TArray<int32>> ret_tris;
 	int num_t;
 
 
@@ -137,7 +140,7 @@ TArray<int32> ASimpleVoxel::GetTris()
 				for (int i : in_plane)
 					UE_LOG(LogTemp, Warning, TEXT("%d"), i);
 
-				ret_tris.Append(SimpleTris(in_plane));
+				ret_tris.Emplace(SimpleTris(in_plane));
 				
 
 			}
@@ -177,6 +180,10 @@ TArray<FVector2D> ASimpleVoxel::GetUV(TArray<FVector> pos, FVector2D center, FVe
 
 TArray<FVector> ASimpleVoxel::GetNormals()
 {
+	return GetNormals(num_v);
+}
+TArray<FVector> ASimpleVoxel::GetNormals(int n)
+{
 	TArray<FVector> ret_norms;
 	for (int i = 0; i < num_v; i++)
 		ret_norms.Emplace(FVector(0));
@@ -184,6 +191,10 @@ TArray<FVector> ASimpleVoxel::GetNormals()
 }
 
 TArray<FProcMeshTangent> ASimpleVoxel::GetTangents()
+{
+	return GetTangents(num_v);
+}
+TArray<FProcMeshTangent> ASimpleVoxel::GetTangents(int n)
 {
 	TArray<FProcMeshTangent> ret_tans;
 	for (int i = 0; i < num_v; i++)
@@ -193,16 +204,28 @@ TArray<FProcMeshTangent> ASimpleVoxel::GetTangents()
 
 TArray<FLinearColor> ASimpleVoxel::GetColors()
 {
+	return GetColors(num_v);
+}
+TArray<FLinearColor> ASimpleVoxel::GetColors(int n)
+{
 	TArray<FLinearColor> ret_colors;
 	for (int i = 0; i < num_v; i++)
-		ret_colors.Emplace(FLinearColor(ForceInitToZero));
+		ret_colors.Emplace(FLinearColor(FMath::FRand(), FMath::FRand(), FMath::FRand()));
 	return ret_colors;
 }
 
 void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 {
-	voxel.uvs = GetUV(voxel.verts, uv_center, FVector2D(0.125, 0.125), FVector2D(33, 33));
-	mesh->CreateMeshSection_LinearColor(0, voxel.verts, voxel.tris, voxel.normals, voxel.uvs, voxel.colors, voxel.tans, false);
+	int cnt = 0;
+
+	UE_LOG(LogTemp, Warning, TEXT("Triangle sets: %d"), voxel.tris.Num());
+	for (TArray<int32> tri : voxel.tris) {
+		mesh->SetMaterial(cnt, MyMaterial);
+		voxel.uvs = GetUV(voxel.verts, FVector2D((cnt % 6)*0.125 + 0.0625, ((cnt / 6) % 3)*0.125 + 0.0625), FVector2D(0.0625, 0.0625), FVector2D(33, 33));
+		mesh->CreateMeshSection_LinearColor(cnt, voxel.verts, tri, voxel.normals, voxel.uvs, voxel.colors, voxel.tans, false);
+		cnt++;
+	}
+
 	
 	mesh->bUseComplexAsSimpleCollision = false;
 	mesh->AddCollisionConvexMesh(voxel.verts);

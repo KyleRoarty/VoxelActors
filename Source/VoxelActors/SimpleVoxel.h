@@ -15,17 +15,7 @@ struct G_Vox {
 	TArray<FVector2D> uvs;
 	TArray<FProcMeshTangent> tans;
 	TArray<FLinearColor> colors;
-	TArray<int32> tris;
-};
-
-struct Tri_3 {
-	FVector vert[3];
-	int idx[3];
-};
-
-struct Seg_3 {
-	FVector vert[2];
-	int idx[2];
+	TArray<TArray<int32>> tris;
 };
 
 UCLASS()
@@ -53,13 +43,16 @@ protected:
 	int TriFromI(int a, int b, int c);
 	int TriFromI(int a, int b, int c, int n);
 
-	TArray<int32> GetTris();
+	TArray<TArray<int32>> GetTris();
 	TArray<int32> SimpleTris(TArray<int> points);
 
 	TArray<FVector2D> GetUV(TArray<FVector> pos, FVector2D center, FVector2D uv_range, FVector2D point_range);
 	TArray<FVector> GetNormals();
+	TArray<FVector> GetNormals(int n);
 	TArray<FProcMeshTangent> GetTangents();
+	TArray<FProcMeshTangent> GetTangents(int n);
 	TArray<FLinearColor> GetColors();
+	TArray<FLinearColor> GetColors(int n);
 	
 	void CreateVoxel(FVector2D uv_center);
 	
