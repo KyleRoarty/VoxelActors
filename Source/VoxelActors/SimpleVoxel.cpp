@@ -216,13 +216,13 @@ TArray<FLinearColor> ASimpleVoxel::GetColors(int n)
 
 void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 {
-	int cnt = 0;
+	cnt = 0;
 
 	UE_LOG(LogTemp, Warning, TEXT("Triangle sets: %d"), voxel.tris.Num());
 	for (TArray<int32> tri : voxel.tris) {
 		mesh->SetMaterial(cnt, MyMaterial);
-		voxel.uvs = GetUV(voxel.verts, FVector2D((cnt % 6)*0.125 + 0.0625, ((cnt / 6) % 3)*0.125 + 0.0625), FVector2D(0.0625, 0.0625), FVector2D(33, 33));
-		mesh->CreateMeshSection_LinearColor(cnt, voxel.verts, tri, voxel.normals, voxel.uvs, voxel.colors, voxel.tans, false);
+		voxel.uvs.Emplace(GetUV(voxel.verts, FVector2D((cnt % 6)*0.125 + 0.0625, ((cnt / 6) % 3)*0.125 + 0.0625), FVector2D(0.0625, 0.0625), FVector2D(33, 33)));
+		mesh->CreateMeshSection_LinearColor(cnt, voxel.verts, tri, voxel.normals, voxel.uvs[cnt], voxel.colors, voxel.tans, false);
 		cnt++;
 	}
 
@@ -256,18 +256,20 @@ void ASimpleVoxel::Tick(float DeltaTime)
 	new_verts.Append(voxel.verts);
 	time += DeltaTime;
 
-	/*if (mesh_made) {
+	if (mesh_made) {
 		for (int i = 0; i < voxel.verts.Num(); i++) {
 			new_verts[i] = FMath::InterpSinInOut(voxel.verts[i], 2 * voxel.verts[i], abs(sinf(time)));
 		}
 
-		mesh->UpdateMeshSection_LinearColor(0, new_verts, voxel.normals, voxel.uvs, voxel.colors, voxel.tans);
+		for (int i = 0; i < cnt; i++)
+			mesh->UpdateMeshSection_LinearColor(i, new_verts, voxel.normals, voxel.uvs[i], voxel.colors, voxel.tans);
+
+		//mesh->UpdateMeshSection_LinearColor(0, new_verts, voxel.normals, voxel.uvs, voxel.colors, voxel.tans);
 		nv_arr.Emplace(new_verts);
 		mesh->SetCollisionConvexMeshes(nv_arr);
 		//		mesh->ClearCollisionConvexMeshes();
 		//		mesh->AddCollisionConvexMesh(new_verts);
 
 	}
-	*/
 }
 

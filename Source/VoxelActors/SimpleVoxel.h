@@ -12,7 +12,7 @@
 struct G_Vox {
 	TArray<FVector> verts;
 	TArray<FVector> normals;
-	TArray<FVector2D> uvs;
+	TArray<TArray<FVector2D>> uvs;
 	TArray<FProcMeshTangent> tans;
 	TArray<FLinearColor> colors;
 	TArray<TArray<int32>> tris;
@@ -59,6 +59,7 @@ protected:
 	TArray<FVector> verts;
 	TArray<FVector> sort_verts;
 	int num_v;
+	int cnt;
 	bool mesh_made;
 
 
