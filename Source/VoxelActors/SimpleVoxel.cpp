@@ -48,6 +48,7 @@ ASimpleVoxel::ASimpleVoxel()
 	mesh_made = false;
 
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("VoxelMesh"));
+	mesh->bUseAsyncCooking = true;
 	RootComponent = mesh;
 
 	voxel.verts = verts;
@@ -248,28 +249,16 @@ void ASimpleVoxel::BeginPlay()
 void ASimpleVoxel::Tick(float DeltaTime)
 {
 	static float time = 0;
-	TArray<FVector> new_verts;
-	TArray<TArray<FVector>> nv_arr;
+	
+	FVector scale;
 
 	Super::Tick(DeltaTime);
 
-	new_verts.Append(voxel.verts);
 	time += DeltaTime;
 
 	if (mesh_made) {
-		for (int i = 0; i < voxel.verts.Num(); i++) {
-			new_verts[i] = FMath::InterpSinInOut(voxel.verts[i], 2 * voxel.verts[i], abs(sinf(time)));
-		}
-
-		for (int i = 0; i < cnt; i++)
-			mesh->UpdateMeshSection_LinearColor(i, new_verts, voxel.normals, voxel.uvs[i], voxel.colors, voxel.tans);
-
-		//mesh->UpdateMeshSection_LinearColor(0, new_verts, voxel.normals, voxel.uvs, voxel.colors, voxel.tans);
-		nv_arr.Emplace(new_verts);
-		mesh->SetCollisionConvexMeshes(nv_arr);
-		//		mesh->ClearCollisionConvexMeshes();
-		//		mesh->AddCollisionConvexMesh(new_verts);
-
+		scale = FVector(FMath::InterpSinInOut(1.0, 2.0, abs(sinf(time))));
+		mesh->SetWorldScale3D(scale);
 	}
 }
 
