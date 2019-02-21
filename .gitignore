@@ -2,7 +2,11 @@ Content/StarterContent
 Binaries
 DerivedDataCache
 Intermediate
-Saved
+
+Saved/*
+!Saved/Logs/
+
+
 .vs
 *.VC.db
 *.opensdf
