@@ -25,7 +25,7 @@ void AVoxelSpawner::BeginPlay()
 	//vox2->FinishSpawning(FTransform(this->GetActorLocation()-FVector(-10,20,0)));
 	//vox1->AttachToActor(vox2, FAttachmentTransformRules::KeepWorldTransform);
 	//vox2->mesh->SetSimulatePhysics(false);
-	vox2->mesh->AttachTo(vox1->mesh, NAME_None, EAttachLocation::Type::KeepWorldPosition, true);
+	//vox2->mesh->AttachTo(vox1->mesh, NAME_None, EAttachLocation::Type::KeepWorldPosition, true);
 
 }
 
