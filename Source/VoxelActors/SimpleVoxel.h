@@ -4,18 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "KismetProceduralMeshLibrary.h"
 #include "ProceduralMeshComponent.h"
 //Must be last include
 #include "SimpleVoxel.generated.h"
 
 //For cube voxels
 struct G_Vox {
-	TArray<FVector> verts;
-	TArray<FVector> normals;
+	TArray<TArray<FVector>> verts;
+	TArray<TArray<FVector>> normals;
 	TArray<TArray<FVector2D>> uvs;
-	TArray<FProcMeshTangent> tans;
-	TArray<FLinearColor> colors;
-	TArray<TArray<int32>> tris;
+	TArray<TArray<FProcMeshTangent>> tans;
+	TArray<TArray<FLinearColor>> colors;
+	TArray<TArray<int32>> face_t;
+	TArray<TArray<int32>> face_i;
 };
 
 UCLASS()
@@ -43,19 +45,18 @@ protected:
 	int TriFromI(int a, int b, int c);
 	int TriFromI(int a, int b, int c, int n);
 
-	TArray<TArray<int32>> GetTris();
-	TArray<int32> SimpleTris(TArray<int> points);
+	TArray<TArray<int32>> GetFaces();
+	TArray<int32> SimpleTris(TArray<int32> idxs);
 
-	TArray<FVector2D> GetUV(TArray<FVector> pos, FVector2D center, FVector2D uv_range, FVector2D point_range);
-	TArray<FVector> GetNormals();
-	TArray<FVector> GetNormals(int n);
-	TArray<FProcMeshTangent> GetTangents();
-	TArray<FProcMeshTangent> GetTangents(int n);
-	TArray<FLinearColor> GetColors();
-	TArray<FLinearColor> GetColors(int n);
+	TArray<FVector2D> GetUV(TArray<FVector> pos, FVector2D uv_range, FVector2D point_range, int row, int col);
+	TArray<FVector> GetVerts(TArray<int32> idx);
+	TArray<FVector> GetNormals(TArray<FVector> points);
+	TArray<FProcMeshTangent> GetTangents(TArray<FVector> points);
+	TArray<FLinearColor> GetColors(TArray<FVector> points);
 	
 	void CreateVoxel(FVector2D uv_center);
 	
+	FVector trans;
 	TArray<FVector> verts;
 	TArray<FVector> sort_verts;
 	int num_v;
