@@ -2,7 +2,6 @@
 
 #include "VoxelSpawner.h"
 #include "Runtime/Engine/Classes/Engine/World.h"
-#include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
 
 // Sets default values
 AVoxelSpawner::AVoxelSpawner()
@@ -22,16 +21,14 @@ void AVoxelSpawner::BeginPlay()
 	vox1 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(FVector(10, 100, 20)));
 	if (vox1 != nullptr) {
 		vox1->SetVerts(ASimpleVoxel::PENTAGON_3D);
-		UGameplayStatics::FinishSpawningActor(vox1, FTransform(FVector(10, 100, 20)));
+		vox1->FinishSpawning(FTransform(vox1->GetActorLocation() + FVector(0, 0, 20)));
 	}
 	vox2 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(vox1->GetActorLocation()+FVector(0, 0, 20)));
 	if (vox2 != nullptr) {
 		vox2->SetVerts(ASimpleVoxel::PENTAGON_3D);
-		UGameplayStatics::FinishSpawningActor(vox2, FTransform(vox1->GetActorLocation()+FVector(0, 0, 20)));
+		vox2->FinishSpawning(FTransform(vox1->GetActorLocation() + FVector(0, 0, 20)));
 	}
 
-	//vox1->FinishSpawning(FTransform(this->GetActorLocation()+FVector(10,20,0)));
-	//vox2->FinishSpawning(FTransform(this->GetActorLocation()-FVector(-10,20,0)));
 	//vox1->AttachToActor(vox2, FAttachmentTransformRules::KeepWorldTransform);
 	//vox2->mesh->SetSimulatePhysics(false);
 	//vox2->mesh->AttachTo(vox1->mesh, NAME_None, EAttachLocation::Type::KeepWorldPosition, true);
