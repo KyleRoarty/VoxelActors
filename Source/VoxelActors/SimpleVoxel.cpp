@@ -73,13 +73,17 @@ void ASimpleVoxel::SetVerts(TArray<FVector> verts)
 	this->verts = verts;
 }
 
+// Deprecated/unused
 int ASimpleVoxel::SegFromI(int a, int b)
 {
 	return SegFromI(a, b, num_v);
 }
 
+// Deprecated/unused
 int ASimpleVoxel::SegFromI(int a, int b, int n)
 {
+	if (a >= b)
+		return -1;
 	return a*n - a*(a + 1) / 2 + b - (a + 1);
 }
 
@@ -91,6 +95,8 @@ int ASimpleVoxel::TriFromI(int a, int b, int c) {
 }
 
 int ASimpleVoxel::TriFromI(int a, int b, int c, int n) {
+	if (a >= b || b >= c)
+		return -1;
 	return ((n - 2)*(n - 1)*n - (n - 2 - a)*(n - 1 - a)*(n - a)) / 6 + ((n - 2 - a)*(n - 1 - a) - (n - 1 - b)*(n - b)) / 2 + c - (b + 1);
 }
 
