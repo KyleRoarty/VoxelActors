@@ -28,9 +28,6 @@ ASimpleVoxel::ASimpleVoxel()
 
 	trans = FVector(0);
 	verts = { FVector(0) };
-	/*verts = { 20 * FVector(0,1,PHI), 20 * FVector(0,1,-PHI), 20 * FVector(0,-1,PHI), 20 * FVector(0,-1,-PHI),
-			  20 * FVector(1,PHI,0), 20 * FVector(1,-PHI,0), 20 * FVector(-1,PHI,0), 20 * FVector(-1,-PHI,0),
-			  20 * FVector(PHI,0,1), 20 * FVector(PHI,0,-1), 20 * FVector(-PHI,0,1), 20 * FVector(-PHI,0,-1)};*/
 
 	mesh_made = false;
 
