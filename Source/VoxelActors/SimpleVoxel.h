@@ -20,6 +20,7 @@ struct G_Vox {
 	TArray<TArray<int32>> face_i;
 };
 
+
 UCLASS()
 class VOXELACTORS_API ASimpleVoxel : public AActor
 {
@@ -35,10 +36,12 @@ public:
 	UPROPERTY(EditAnywhere)
 		UMaterial *MyMaterial;
 
+	void SetVerts(TArray<FVector> verts);
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void PreInitializeComponents() override;
 
 	int SegFromI(int a, int b);
 	int SegFromI(int a, int b, int n);
@@ -68,6 +71,11 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	
-	
+	// Points for basic shapes that I use a lot
+	static const TArray<FVector> PENTAGON_3D;
+	static const TArray<FVector> RTRI_3D;
+	static const TArray<FVector> CUBE;
+	static const TArray<FVector> DODECAHEDRON;
+	static const TArray<FVector> ICOSAHEDRON;
+
 };

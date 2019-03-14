@@ -2,6 +2,7 @@
 
 #include "VoxelSpawner.h"
 #include "Runtime/Engine/Classes/Engine/World.h"
+#include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
 
 // Sets default values
 AVoxelSpawner::AVoxelSpawner()
@@ -18,8 +19,16 @@ AVoxelSpawner::AVoxelSpawner()
 void AVoxelSpawner::BeginPlay()
 {
 	Super::BeginPlay();
-	vox1 = GetWorld()->SpawnActor<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FVector(10, 100, 20), FRotator());
-	vox2 = GetWorld()->SpawnActor<ASimpleVoxel>(ASimpleVoxel::StaticClass(), vox1->GetActorLocation()+FVector(0, 0, 20), FRotator());
+	vox1 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(FVector(10, 100, 20)));
+	if (vox1 != nullptr) {
+		vox1->SetVerts(ASimpleVoxel::PENTAGON_3D);
+		UGameplayStatics::FinishSpawningActor(vox1, FTransform(FVector(10, 100, 20)));
+	}
+	vox2 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(vox1->GetActorLocation()+FVector(0, 0, 20)));
+	if (vox2 != nullptr) {
+		vox2->SetVerts(ASimpleVoxel::PENTAGON_3D);
+		UGameplayStatics::FinishSpawningActor(vox2, FTransform(vox1->GetActorLocation()+FVector(0, 0, 20)));
+	}
 
 	//vox1->FinishSpawning(FTransform(this->GetActorLocation()+FVector(10,20,0)));
 	//vox2->FinishSpawning(FTransform(this->GetActorLocation()-FVector(-10,20,0)));

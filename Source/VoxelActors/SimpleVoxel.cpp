@@ -7,6 +7,18 @@
 
 #define PHI (1+sqrt(5))/2.0
 #define IPHI 2.0/(1+sqrt(5))
+
+// Basic shape defines
+const TArray<FVector> ASimpleVoxel::PENTAGON_3D = { FVector(0,-20,0), FVector(-19,-6,0), FVector(-12,16,0), FVector(12,16,0), FVector(19,-6,0), FVector(0,-20,20), FVector(-19,-6,20), FVector(-12,16,20), FVector(12,16,20), FVector(19,-6,20) };
+const TArray<FVector> ASimpleVoxel::RTRI_3D = { 20*FVector(-1,-1,-1), 20*FVector(1,-1,-1), 20*FVector(0,0,-1), 20*FVector(-1,-1,1), 20*FVector(1,-1,1), 20*FVector(0,0,1) };
+const TArray<FVector> ASimpleVoxel::CUBE = { 20 * FVector(-1,-1,-1), 20 * FVector(1,-1,-1), 20 * FVector(1,1,-1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(1,-1,1), 20 * FVector(1,1,1), 20 * FVector(-1,1,1) };
+const TArray<FVector> ASimpleVoxel::DODECAHEDRON = { 20 * FVector(1,1,1), 20 * FVector(1,1,-1), 20 * FVector(1,-1,1), 20 * FVector(1,-1,-1), 20 * FVector(-1,1,1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(-1,-1,-1),
+													 20 * FVector(0,PHI,IPHI), 20 * FVector(0,PHI,-IPHI), 20 * FVector(0,-PHI,IPHI),20 * FVector(0,-PHI,-IPHI),
+													 20 * FVector(IPHI,0,PHI), 20 * FVector(IPHI,0,-PHI),20 * FVector(-IPHI,0,PHI),20 * FVector(-IPHI,0,-PHI),
+													 20 * FVector(PHI,IPHI,0),20 * FVector(PHI,-IPHI,0),20 * FVector(-PHI,IPHI,0),20 * FVector(-PHI,-IPHI, 0) };
+const TArray<FVector> ASimpleVoxel::ICOSAHEDRON = { 20 * FVector(0,1,PHI), 20 * FVector(0,1,-PHI), 20 * FVector(0,-1,PHI), 20 * FVector(0,-1,-PHI),
+													20 * FVector(1,PHI,0), 20 * FVector(1,-PHI,0), 20 * FVector(-1,PHI,0), 20 * FVector(-1,-PHI,0),
+													20 * FVector(PHI,0,1), 20 * FVector(PHI,0,-1), 20 * FVector(-PHI,0,1), 20 * FVector(-PHI,0,-1) };
 // Sets default values
 ASimpleVoxel::ASimpleVoxel()
 {
@@ -15,16 +27,26 @@ ASimpleVoxel::ASimpleVoxel()
 	PrimaryActorTick.bCanEverTick = true;
 
 	trans = FVector(0);
-	verts = { 20*FVector(-1,-1,-1), 20*FVector(1,-1,-1), 20*FVector(1,1,-1), 20*FVector(-1,1,-1), 20*FVector(-1,-1,1), 20*FVector(1,-1,1), 20*FVector(1,1,1), 20*FVector(-1,1,1) };
-	verts = { 20*FVector(-1,-1,-1), 20*FVector(1,-1,-1), 20*FVector(0,0,-1), 20*FVector(-1,-1,1), 20*FVector(1,-1,1), 20*FVector(0,0,1) };
-	verts = { FVector(0,-20,0), FVector(-19,-6,0), FVector(-12,16,0), FVector(12,16,0), FVector(19,-6,0), FVector(0,-20,20), FVector(-19,-6,20), FVector(-12,16,20), FVector(12,16,20), FVector(19,-6,20) };
-	/*verts = { 20 * FVector(1,1,1), 20 * FVector(1,1,-1), 20 * FVector(1,-1,1), 20 * FVector(1,-1,-1), 20 * FVector(-1,1,1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(-1,-1,-1),
-			  20 * FVector(0,PHI,IPHI), 20 * FVector(0,PHI,-IPHI), 20 * FVector(0,-PHI,IPHI),20 * FVector(0,-PHI,-IPHI),
-			  20 * FVector(IPHI,0,PHI), 20 * FVector(IPHI,0,-PHI),20 * FVector(-IPHI,0,PHI),20 * FVector(-IPHI,0,-PHI),
-			  20 * FVector(PHI,IPHI,0),20 * FVector(PHI,-IPHI,0),20 * FVector(-PHI,IPHI,0),20 * FVector(-PHI,-IPHI, 0) };*/
+	verts = { FVector(0) };
 	/*verts = { 20 * FVector(0,1,PHI), 20 * FVector(0,1,-PHI), 20 * FVector(0,-1,PHI), 20 * FVector(0,-1,-PHI),
 			  20 * FVector(1,PHI,0), 20 * FVector(1,-PHI,0), 20 * FVector(-1,PHI,0), 20 * FVector(-1,-PHI,0),
 			  20 * FVector(PHI,0,1), 20 * FVector(PHI,0,-1), 20 * FVector(-PHI,0,1), 20 * FVector(-PHI,0,-1)};*/
+
+	mesh_made = false;
+
+	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("VoxelMesh"));
+	mesh->bUseAsyncCooking = true;
+	RootComponent = mesh;
+
+
+	static ConstructorHelpers::FObjectFinder<UMaterial> BlahMaterial(TEXT("Material'/Game/StarterContent/Materials/M_ColorGrid_LowSpec.M_ColorGrid_LowSpec'"));
+	MyMaterial = BlahMaterial.Object;
+
+}
+
+void ASimpleVoxel::PreInitializeComponents()
+{
+	Super::PreInitializeComponents();
 
 	// Get a vector of numbers that when subtracted from every vert, causes all verts to be > 0 in every dimension
 	for (FVector v : verts) {
@@ -46,17 +68,12 @@ ASimpleVoxel::ASimpleVoxel()
 	}
 
 	num_v = verts.Num();
-	mesh_made = false;
-
-	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("VoxelMesh"));
-	mesh->bUseAsyncCooking = true;
-	RootComponent = mesh;
-
 	voxel.face_i = GetFaces();
+}
 
-	static ConstructorHelpers::FObjectFinder<UMaterial> BlahMaterial(TEXT("Material'/Game/StarterContent/Materials/M_ColorGrid_LowSpec.M_ColorGrid_LowSpec'"));
-	MyMaterial = BlahMaterial.Object;
-
+void ASimpleVoxel::SetVerts(TArray<FVector> verts)
+{
+	this->verts = verts;
 }
 
 int ASimpleVoxel::SegFromI(int a, int b)
@@ -308,7 +325,7 @@ void ASimpleVoxel::Tick(float DeltaTime)
 {
 	static float time = 0;
 	
-	mesh_made = false;
+	//mesh_made = false;
 
 	FVector scale;
 
