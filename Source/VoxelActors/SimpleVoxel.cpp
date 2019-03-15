@@ -41,33 +41,6 @@ ASimpleVoxel::ASimpleVoxel()
 
 }
 
-void ASimpleVoxel::PreInitializeComponents()
-{
-	Super::PreInitializeComponents();
-
-	// Get a vector of numbers that when subtracted from every vert, causes all verts to be > 0 in every dimension
-	for (FVector v : verts) {
-		if (v.X < trans.X)
-			trans.X = v.X;
-		if (v.Y < trans.Y)
-			trans.Y = v.Y;
-		if (v.Z < trans.Z)
-			trans.Z = v.Z;
-	}
-
-	// Order from closest to furthest away from origin
-	verts.Sort([this](const FVector A,  const FVector B){
-		return (A-this->trans).Size() < (B-this->trans).Size();
-	});
-
-	for (FVector v : verts) {
-		sort_verts.Emplace(v - trans);
-	}
-
-	num_v = verts.Num();
-	voxel.face_i = GetFaces();
-}
-
 void ASimpleVoxel::SetVerts(TArray<FVector> verts)
 {
 	this->verts = verts;
@@ -319,6 +292,29 @@ void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 void ASimpleVoxel::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Get a vector of numbers that when subtracted from every vert, causes all verts to be > 0 in every dimension
+	for (FVector v : verts) {
+		if (v.X < trans.X)
+			trans.X = v.X;
+		if (v.Y < trans.Y)
+			trans.Y = v.Y;
+		if (v.Z < trans.Z)
+			trans.Z = v.Z;
+	}
+
+	// Order from closest to furthest away from origin
+	verts.Sort([this](const FVector A,  const FVector B){
+		return (A-this->trans).Size() < (B-this->trans).Size();
+	});
+
+	for (FVector v : verts) {
+		sort_verts.Emplace(v - trans);
+	}
+
+	num_v = verts.Num();
+	voxel.face_i = GetFaces();
+
 	CreateVoxel(FVector2D(.25, .25));
 	
 }
@@ -328,7 +324,7 @@ void ASimpleVoxel::Tick(float DeltaTime)
 {
 	static float time = 0;
 	
-	//mesh_made = false;
+	mesh_made = false;
 
 	FVector scale;
 

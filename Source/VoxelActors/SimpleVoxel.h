@@ -41,7 +41,6 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	virtual void PreInitializeComponents() override;
 
 	int SegFromI(int a, int b);
 	int SegFromI(int a, int b, int n);
