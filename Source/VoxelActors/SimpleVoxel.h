@@ -42,8 +42,6 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	int SegFromI(int a, int b);
-	int SegFromI(int a, int b, int n);
 	int TriFromI(int a, int b, int c);
 	int TriFromI(int a, int b, int c, int n);
 

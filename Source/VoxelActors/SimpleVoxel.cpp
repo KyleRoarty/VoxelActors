@@ -46,21 +46,6 @@ void ASimpleVoxel::SetVerts(TArray<FVector> verts)
 	this->verts = verts;
 }
 
-// Deprecated/unused
-int ASimpleVoxel::SegFromI(int a, int b)
-{
-	return SegFromI(a, b, num_v);
-}
-
-// Deprecated/unused
-int ASimpleVoxel::SegFromI(int a, int b, int n)
-{
-	if (a >= b)
-		return -1;
-	return a*n - a*(a + 1) / 2 + b - (a + 1);
-}
-
-
 //a < b < c
 //Indexes linear array of triangles from the three points defining the triangle
 int ASimpleVoxel::TriFromI(int a, int b, int c) {
