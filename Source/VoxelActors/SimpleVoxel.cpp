@@ -160,11 +160,19 @@ TArray<int32> ASimpleVoxel::SimpleTris(TArray<int32> idxs) {
 	FVector norm;
 
 	while (idxs.Num() >= 3) {
-		//ret.Append({ p_idxs[0], p_idxs[1], p_idxs[2], p_idxs[2], p_idxs[1], p_idxs[0] });
-		ret.Append({ p_idxs[0], p_idxs[1], p_idxs[2] });
 		norm = FVector::CrossProduct(sort_verts[idxs[1]] - sort_verts[idxs[0]], sort_verts[idxs[2]] - sort_verts[idxs[0]]).GetSafeNormal();
-		// Meant to make it so that only one triplet needs to be appended, not both; Unsure if it works perfectly
-		if (FVector::DotProduct(norm, FVector(0)) >= 0)
+		norm.Normalize();
+		/*	Only use the triplet that is facing outward
+			sort_verts are all >= 0
+			Need to normalize the point so that it's centered around 0,0,0
+			one of norm_point + norm and norm_point - norm will be closer to 0,0,0
+			The triangle of the one closer to 0,0,0 will be facing inwards
+			We want the triangle that faces outwards, so we choose the one that is larger
+
+			**Note: If this stops working, take the average of the points and use that as the point we compare against
+			**Note 2: It is doubtful that this will work with concave shapes
+		*/ 
+		if ((sort_verts[idxs[0]] - avg_sort_vert + norm).Size() >= (sort_verts[idxs[0]] - avg_sort_vert - norm).Size())
 			ret.Append({ p_idxs[2], p_idxs[1], p_idxs[0] });
 		else
 			ret.Append({ p_idxs[0], p_idxs[1], p_idxs[2] });
@@ -262,8 +270,6 @@ void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 	// Get the rest of the parameters that may or may not be needed
 	for (TArray<FVector> v : voxel.verts) {
 		voxel.uvs.Emplace(GetUV(v, FVector2D(0.125, 0.125), FVector2D(FMath::Abs(trans.X)+1, FMath::Abs(trans.Y)+1), 3, 6));
-		voxel.normals.Emplace(GetNormals(v));
-		voxel.tans.Emplace(GetTangents(v));
 		voxel.colors.Emplace(GetColors(v));
 	}
 	
@@ -276,7 +282,6 @@ void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 		mesh->SetMaterial(i, MyMaterial);
 		mesh->CreateMeshSection_LinearColor(i, voxel.verts[i], voxel.face_t[i], voxel.normals[i], voxel.uvs[i], TArray<FLinearColor>(), voxel.tans[i], false);
 	}
-
 	
 	//These are all needed in order to have physics work on the object
 	mesh->bUseComplexAsSimpleCollision = false;
@@ -311,6 +316,12 @@ void ASimpleVoxel::BeginPlay()
 	for (FVector v : verts) {
 		sort_verts.Emplace(v - trans);
 	}
+
+	avg_sort_vert = FVector(0);
+	for (FVector sv : sort_verts) {
+		avg_sort_vert += sv;
+	}
+	avg_sort_vert /= sort_verts.Num();
 
 	num_v = verts.Num();
 	voxel.face_i = GetFaces();
