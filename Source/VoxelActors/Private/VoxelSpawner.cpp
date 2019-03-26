@@ -23,45 +23,31 @@ void AVoxelSpawner::BeginPlay()
 	if (vox1 != nullptr) {
 		vox1->SetVerts(ASimpleVoxel::CUBE, true);
 		vox1->FinishSpawning(FTransform(FVector(10, 100, 160)));
-		vox1->mesh->SetEnableGravity(false);
 	}
 	vox2 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(vox1->GetActorLocation()+FVector(0, vox1->bounds.Y, 0)));
 	if (vox2 != nullptr) {
 		vox2->SetVerts(ASimpleVoxel::CUBE, false);
 		vox2->FinishSpawning(FTransform(vox1->GetActorLocation() + FVector(0, vox1->bounds.Y, 0)));
-		vox2->mesh->SetEnableGravity(false);
 	}
 
-	//vox1->SetConstrain(vox2);
-
-	UPROPERTY(EditAnywhere)
 	FConstraintInstance constraints;
 
 	constraints.SetDisableCollision(false);
 
-
 	constraints.SetLinearXMotion(ELinearConstraintMotion::LCM_Locked);
-	constraints.SetLinearYMotion(ELinearConstraintMotion::LCM_Locked);
+	constraints.SetLinearYMotion(ELinearConstraintMotion::LCM_Free);
 	constraints.SetLinearZMotion(ELinearConstraintMotion::LCM_Locked);
 
-	constraints.SetAngularSwing1Motion(EAngularConstraintMotion::ACM_Free);
-	constraints.SetAngularSwing2Motion(EAngularConstraintMotion::ACM_Free);
-	constraints.SetAngularTwistMotion(EAngularConstraintMotion::ACM_Free);
-
-	constraints.DisableProjection();
-	constraints.ProfileInstance.LinearLimit.bSoftConstraint = 1;
-	constraints.ProfileInstance.LinearLimit.Restitution = 1;
-	constraints.ProfileInstance.TwistLimit.bSoftConstraint = 0;
-	//constraints.ProfileInstance.TwistLimit.Restitution = 1;
-	constraints.ProfileInstance.ConeLimit.bSoftConstraint = 0;
-	//constraints.ProfileInstance.ConeLimit.Restitution = 1;
+	constraints.SetAngularSwing1Motion(EAngularConstraintMotion::ACM_Locked);
+	constraints.SetAngularSwing2Motion(EAngularConstraintMotion::ACM_Locked);
+	constraints.SetAngularTwistMotion(EAngularConstraintMotion::ACM_Locked);
 
 	constraintComp->ConstraintInstance = constraints;
-	
-	//constraintComp->AttachToComponent(vox1->mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
-	constraintComp->ConstraintActor1 = vox1;
-	constraintComp->ConstraintActor2 = vox2;
+	constraintComp->SetLinearPositionTarget(vox1->GetActorLocation());
+	constraintComp->SetLinearPositionDrive(false, true, false);
+	constraintComp->SetLinearDriveParams(10000, 0, 0);
+
 	constraintComp->SetConstrainedComponents(vox1->mesh, NAME_None, vox2->mesh, NAME_None);
 }
 
