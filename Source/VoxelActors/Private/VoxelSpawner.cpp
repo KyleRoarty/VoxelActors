@@ -12,27 +12,48 @@ AVoxelSpawner::AVoxelSpawner()
 	mesh = CreateDefaultSubobject<UMeshComponent>(TEXT("SpawnerMesh"));
 	RootComponent = mesh;
 
+	constraintComp = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("Physics constraint"));
 }
 
 // Called when the game starts or when spawned
 void AVoxelSpawner::BeginPlay()
 {
 	Super::BeginPlay();
-	vox1 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(FVector(10, 100, 20)));
+	vox1 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(FVector(10, 100, 40)));
 	if (vox1 != nullptr) {
-		vox1->SetVerts(ASimpleVoxel::PENTAGON_3D);
-		vox1->FinishSpawning(FTransform(vox1->GetActorLocation() + FVector(0, 0, 20)));
+		vox1->SetVerts(ASimpleVoxel::CUBE, false);
+		vox1->FinishSpawning(FTransform(FVector(10, 100, 40)));
 	}
-	vox2 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(vox1->GetActorLocation()+FVector(0, 0, 20)));
+	vox2 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(vox1->GetActorLocation()+FVector(0, vox1->bounds.Y, 0)));
 	if (vox2 != nullptr) {
-		vox2->SetVerts(ASimpleVoxel::PENTAGON_3D);
-		vox2->FinishSpawning(FTransform(vox1->GetActorLocation() + FVector(0, 0, 20)));
+		vox2->SetVerts(ASimpleVoxel::CUBE, false);
+		vox2->FinishSpawning(FTransform(vox1->GetActorLocation() + FVector(0, vox1->bounds.Y, 0)));
 	}
 
-	//vox1->AttachToActor(vox2, FAttachmentTransformRules::KeepWorldTransform);
-	//vox2->mesh->SetSimulatePhysics(false);
-	//vox2->mesh->AttachTo(vox1->mesh, NAME_None, EAttachLocation::Type::KeepWorldPosition, true);
+	//vox1->SetConstrain(vox2);
 
+	FConstraintInstance constraints;
+
+	constraints.SetDisableCollision(true);
+
+	constraints.SetLinearXMotion(ELinearConstraintMotion::LCM_Locked);
+	constraints.SetLinearYMotion(ELinearConstraintMotion::LCM_Locked);
+	constraints.SetLinearZMotion(ELinearConstraintMotion::LCM_Locked);
+
+	constraints.SetAngularSwing1Motion(EAngularConstraintMotion::ACM_Locked);
+	constraints.SetAngularSwing2Motion(EAngularConstraintMotion::ACM_Locked);
+	constraints.SetAngularTwistMotion(EAngularConstraintMotion::ACM_Locked);
+
+
+	constraintComp->ConstraintInstance = constraints;
+	
+	constraintComp->AttachToComponent(vox1->mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+	constraintComp->ConstraintActor1 = vox1;
+	constraintComp->ConstraintActor2 = vox2;
+
+
+	constraintComp->SetConstrainedComponents(vox1->mesh, NAME_None, vox2->mesh, NAME_None);
 }
 
 // Called every frame

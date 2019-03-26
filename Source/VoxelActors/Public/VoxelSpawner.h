@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "SimpleVoxel.h"
+#include "Runtime/Engine/Classes/PhysicsEngine/PhysicsConstraintComponent.h"
 #include "VoxelSpawner.generated.h"
 
 UCLASS()
@@ -18,6 +19,8 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 		UMeshComponent *mesh;
+	UPROPERTY(EditAnywhere)
+		UPhysicsConstraintComponent *constraintComp;
 
 protected:
 	// Called when the game starts or when spawned

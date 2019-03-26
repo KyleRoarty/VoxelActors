@@ -27,12 +27,12 @@ ASimpleVoxel::ASimpleVoxel()
 	PrimaryActorTick.bCanEverTick = true;
 
 	trans = FVector(0);
+	bounds = FVector(0);
 	verts = { FVector(0) };
-
-	mesh_made = false;
+	grow = false;
 
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("VoxelMesh"));
-	mesh->bUseAsyncCooking = true;
+	mesh->bUseAsyncCooking = false;
 	RootComponent = mesh;
 
 
@@ -41,9 +41,10 @@ ASimpleVoxel::ASimpleVoxel()
 
 }
 
-void ASimpleVoxel::SetVerts(TArray<FVector> verts)
+void ASimpleVoxel::SetVerts(TArray<FVector> verts, bool grow)
 {
 	this->verts = verts;
+	this->grow = grow;
 }
 
 //a < b < c
@@ -121,7 +122,7 @@ TArray<TArray<int32>> ASimpleVoxel::GetFaces()
 				}
 
 				for (int i : in_plane)
-					UE_LOG(LogTemp, Warning, TEXT("%d"), i);
+					//UE_LOG(LogTemp, Warning, TEXT("%d"), i);
 
 				ret_face_i.Emplace(in_plane);
 			}
@@ -243,7 +244,7 @@ void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 {
 	cnt = 0;
 
-	UE_LOG(LogTemp, Warning, TEXT("Triangle sets: %d"), voxel.face_t.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("Triangle sets: %d"), voxel.face_t.Num());
 
 	// Once you have the faces-as-indices, you can get the vertices needed
 	// as well as the faces-as-triangles
@@ -262,20 +263,19 @@ void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 	voxel.tans.Init(TArray<FProcMeshTangent>(), voxel.verts.Num());
 	voxel.normals.Init(TArray<FVector>(), voxel.verts.Num());
 
+	mesh->bUseComplexAsSimpleCollision = false;
+
 	for (int i = 0; i < voxel.verts.Num(); i++) {
 		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(voxel.verts[i], voxel.face_t[i], voxel.uvs[i], voxel.normals[i], voxel.tans[i]);
 		mesh->SetMaterial(i, MyMaterial);
-		mesh->CreateMeshSection_LinearColor(i, voxel.verts[i], voxel.face_t[i], voxel.normals[i], voxel.uvs[i], TArray<FLinearColor>(), voxel.tans[i], false);
+		mesh->CreateMeshSection_LinearColor(i, voxel.verts[i], voxel.face_t[i], voxel.normals[i], voxel.uvs[i], TArray<FLinearColor>(), voxel.tans[i], true);
 	}
 	
 	//These are all needed in order to have physics work on the object
-	mesh->bUseComplexAsSimpleCollision = false;
 	mesh->AddCollisionConvexMesh(verts);
 
 	mesh->SetSimulatePhysics(true);
 	mesh->SetEnableGravity(true);
-
-	mesh_made = true;
 }
 
 // Called when the game starts or when spawned
@@ -291,7 +291,17 @@ void ASimpleVoxel::BeginPlay()
 			trans.Y = v.Y;
 		if (v.Z < trans.Z)
 			trans.Z = v.Z;
+
+		if (v.X > bounds.X)
+			bounds.X = v.X;
+		if (v.Y > bounds.Y)
+			bounds.Y = v.Y;
+		if (v.Z > bounds.Z)
+			bounds.Z = v.Z;
+
 	}
+
+	bounds -= trans;
 
 	// Order from closest to furthest away from origin
 	verts.Sort([this](const FVector A,  const FVector B){
@@ -319,8 +329,6 @@ void ASimpleVoxel::BeginPlay()
 void ASimpleVoxel::Tick(float DeltaTime)
 {
 	static float time = 0;
-	
-	mesh_made = false;
 
 	FVector scale;
 
@@ -329,7 +337,7 @@ void ASimpleVoxel::Tick(float DeltaTime)
 	time += DeltaTime;
 
 	// Scaling an object scales its size. Who knew? Not I
-	if (mesh_made) {
+	if (grow) {
 		scale = FVector(FMath::InterpSinInOut(1.0, 2.0, abs(sinf(time))));
 		mesh->SetWorldScale3D(scale);
 	}

@@ -20,7 +20,6 @@ struct G_Vox {
 	TArray<TArray<int32>> face_i;
 };
 
-
 UCLASS()
 class VOXELACTORS_API ASimpleVoxel : public AActor
 {
@@ -36,7 +35,9 @@ public:
 	UPROPERTY(EditAnywhere)
 		UMaterial *MyMaterial;
 
-	void SetVerts(TArray<FVector> verts);
+	void SetVerts(TArray<FVector> verts, bool grow);
+
+	FVector bounds;
 
 protected:
 	// Called when the game starts or when spawned
@@ -62,7 +63,7 @@ protected:
 	FVector avg_sort_vert;
 	int num_v;
 	int cnt;
-	bool mesh_made;
+	bool grow;
 
 
 public:	
