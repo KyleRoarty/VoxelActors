@@ -37,6 +37,11 @@ void ASimpleVoxel::SetVerts(TArray<FVector> verts, float scale, bool grow)
 	this->grow = grow;
 }
 
+FVector ASimpleVoxel::GetBounds()
+{
+	return bounds;
+}
+
 TArray<TArray<FVector2D>> ASimpleVoxel::GetUVs()
 {
 	return uvs;

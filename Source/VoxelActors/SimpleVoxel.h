@@ -25,8 +25,7 @@ public:
 
 	void SetVerts(TArray<FVector> verts, float scale, bool grow);
 
-	FVector bounds;
-
+	FVector GetBounds();
 	TArray<TArray<FVector2D>> GetUVs();
 	TArray<TArray<FVector>> GetVerts();
 	TArray<TArray<FVector>> GetNormals();
@@ -57,6 +56,8 @@ private:
 	FVector avg_sort_vert;
 	int num_v;
 	bool grow;
+
+	FVector bounds;
 
 	TArray<TArray<FVector>> verts_arr;
 	TArray<TArray<FVector>> normals;
