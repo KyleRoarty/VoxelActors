@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "SimpleVoxel.h"
 #include "Runtime/Engine/Classes/PhysicsEngine/PhysicsConstraintComponent.h"
+#include "Shapes.h"
 #include "VoxelSpawner.generated.h"
 
 UCLASS()

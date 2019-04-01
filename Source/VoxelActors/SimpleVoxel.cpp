@@ -5,20 +5,8 @@
 #include "Runtime/Engine/Classes/Materials/Material.h"
 
 
-#define PHI (1+sqrt(5))/2.0
-#define IPHI 2.0/(1+sqrt(5))
 
-// Basic shape defines
-const TArray<FVector> ASimpleVoxel::PENTAGON_3D = { FVector(0,-20,0), FVector(-19,-6,0), FVector(-12,16,0), FVector(12,16,0), FVector(19,-6,0), FVector(0,-20,20), FVector(-19,-6,20), FVector(-12,16,20), FVector(12,16,20), FVector(19,-6,20) };
-const TArray<FVector> ASimpleVoxel::RTRI_3D = { 20*FVector(-1,-1,-1), 20*FVector(1,-1,-1), 20*FVector(0,0,-1), 20*FVector(-1,-1,1), 20*FVector(1,-1,1), 20*FVector(0,0,1) };
-const TArray<FVector> ASimpleVoxel::CUBE = { 20 * FVector(-1,-1,-1), 20 * FVector(1,-1,-1), 20 * FVector(1,1,-1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(1,-1,1), 20 * FVector(1,1,1), 20 * FVector(-1,1,1) };
-const TArray<FVector> ASimpleVoxel::DODECAHEDRON = { 20 * FVector(1,1,1), 20 * FVector(1,1,-1), 20 * FVector(1,-1,1), 20 * FVector(1,-1,-1), 20 * FVector(-1,1,1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(-1,-1,-1),
-													 20 * FVector(0,PHI,IPHI), 20 * FVector(0,PHI,-IPHI), 20 * FVector(0,-PHI,IPHI),20 * FVector(0,-PHI,-IPHI),
-													 20 * FVector(IPHI,0,PHI), 20 * FVector(IPHI,0,-PHI),20 * FVector(-IPHI,0,PHI),20 * FVector(-IPHI,0,-PHI),
-													 20 * FVector(PHI,IPHI,0),20 * FVector(PHI,-IPHI,0),20 * FVector(-PHI,IPHI,0),20 * FVector(-PHI,-IPHI, 0) };
-const TArray<FVector> ASimpleVoxel::ICOSAHEDRON = { 20 * FVector(0,1,PHI), 20 * FVector(0,1,-PHI), 20 * FVector(0,-1,PHI), 20 * FVector(0,-1,-PHI),
-													20 * FVector(1,PHI,0), 20 * FVector(1,-PHI,0), 20 * FVector(-1,PHI,0), 20 * FVector(-1,-PHI,0),
-													20 * FVector(PHI,0,1), 20 * FVector(PHI,0,-1), 20 * FVector(-PHI,0,1), 20 * FVector(-PHI,0,-1) };
+
 // Sets default values
 ASimpleVoxel::ASimpleVoxel()
 {
@@ -41,10 +29,47 @@ ASimpleVoxel::ASimpleVoxel()
 
 }
 
-void ASimpleVoxel::SetVerts(TArray<FVector> verts, bool grow)
+void ASimpleVoxel::SetVerts(TArray<FVector> verts, float scale, bool grow)
 {
-	this->verts = verts;
+	this->verts = TArray<FVector>(verts);
+	for (FVector& vert : this->verts)
+		vert = scale * vert;
 	this->grow = grow;
+}
+
+FVector ASimpleVoxel::GetBounds()
+{
+	return bounds;
+}
+
+TArray<TArray<FVector2D>> ASimpleVoxel::GetUVs()
+{
+	return uvs;
+}
+
+TArray<TArray<FVector>> ASimpleVoxel::GetVerts()
+{
+	return verts_arr;
+}
+
+TArray<TArray<FVector>> ASimpleVoxel::GetNormals()
+{
+	return normals;
+}
+
+TArray<TArray<FProcMeshTangent>> ASimpleVoxel::GetTangents()
+{
+	return tans;
+}
+
+TArray<TArray<FLinearColor>> ASimpleVoxel::GetColors()
+{
+	return colors;
+}
+
+TArray<TArray<int32>> ASimpleVoxel::GetFaces()
+{
+	return face_i;
 }
 
 //a < b < c
@@ -59,10 +84,56 @@ int ASimpleVoxel::TriFromI(int a, int b, int c, int n) {
 	return ((n - 2)*(n - 1)*n - (n - 2 - a)*(n - 1 - a)*(n - a)) / 6 + ((n - 2 - a)*(n - 1 - a) - (n - 1 - b)*(n - b)) / 2 + c - (b + 1);
 }
 
-TArray<TArray<int32>> ASimpleVoxel::GetFaces()
+//Generates triangle triplets from indexes on a face passed in
+TArray<int32> ASimpleVoxel::SimpleTris(TArray<int32> idxs) {
+	TArray<int32> ret;
+
+	TArray<int32> p_idxs;
+
+	for (int i = 0; i < idxs.Num(); i++)
+		p_idxs.Emplace(i);
+
+	//First, second distances
+	float f_dist, s_dist;
+	FVector norm;
+
+	while (idxs.Num() >= 3) {
+		norm = FVector::CrossProduct(sort_verts[idxs[1]] - sort_verts[idxs[0]], sort_verts[idxs[2]] - sort_verts[idxs[0]]).GetSafeNormal();
+		norm.Normalize();
+		/*	Only use the triplet that is facing outward
+			sort_verts are all >= 0
+			Need to normalize the point so that it's centered around 0,0,0
+			one of norm_point + norm and norm_point - norm will be closer to 0,0,0
+			The triangle of the one closer to 0,0,0 will be facing inwards
+			We want the triangle that faces outwards, so we choose the one that is larger
+
+			**Note: If this stops working, take the average of the points and use that as the point we compare against
+			**Note 2: It is doubtful that this will work with concave shapes
+		*/ 
+		if ((sort_verts[idxs[0]] - avg_sort_vert + norm).Size() >= (sort_verts[idxs[0]] - avg_sort_vert - norm).Size())
+			ret.Append({ p_idxs[2], p_idxs[1], p_idxs[0] });
+		else
+			ret.Append({ p_idxs[0], p_idxs[1], p_idxs[2] });
+
+		//Either the first or second point gets removed based off of which is closer to the third, as that one gets "covered up" by the other two forming a line segment
+		f_dist = (sort_verts[idxs[2]] - sort_verts[idxs[0]]).Size();
+		s_dist = (sort_verts[idxs[2]] - sort_verts[idxs[1]]).Size();
+		if (f_dist < s_dist) {
+			p_idxs.RemoveAt(0);
+			idxs.RemoveAt(0);
+		}
+		else {
+			p_idxs.RemoveAt(1);
+			idxs.RemoveAt(1);
+		}
+	}
+
+	return ret;
+}
+
+void ASimpleVoxel::GenerateFaces()
 {
 	TArray<bool> checked_tri;
-	TArray<TArray<int32>> ret_face_i;
 	int num_t;
 	
 
@@ -124,69 +195,10 @@ TArray<TArray<int32>> ASimpleVoxel::GetFaces()
 				for (int i : in_plane)
 					//UE_LOG(LogTemp, Warning, TEXT("%d"), i);
 
-				ret_face_i.Emplace(in_plane);
+				face_i.Emplace(in_plane);
 			}
 		}
 	}
-
-	return ret_face_i;
-}
-
-//Generates triangle triplets from indexes on a face passed in
-TArray<int32> ASimpleVoxel::SimpleTris(TArray<int32> idxs) {
-	TArray<int32> ret;
-
-	TArray<int32> p_idxs;
-
-	for (int i = 0; i < idxs.Num(); i++)
-		p_idxs.Emplace(i);
-
-	//First, second distances
-	float f_dist, s_dist;
-	FVector norm;
-
-	while (idxs.Num() >= 3) {
-		norm = FVector::CrossProduct(sort_verts[idxs[1]] - sort_verts[idxs[0]], sort_verts[idxs[2]] - sort_verts[idxs[0]]).GetSafeNormal();
-		norm.Normalize();
-		/*	Only use the triplet that is facing outward
-			sort_verts are all >= 0
-			Need to normalize the point so that it's centered around 0,0,0
-			one of norm_point + norm and norm_point - norm will be closer to 0,0,0
-			The triangle of the one closer to 0,0,0 will be facing inwards
-			We want the triangle that faces outwards, so we choose the one that is larger
-
-			**Note: If this stops working, take the average of the points and use that as the point we compare against
-			**Note 2: It is doubtful that this will work with concave shapes
-		*/ 
-		if ((sort_verts[idxs[0]] - avg_sort_vert + norm).Size() >= (sort_verts[idxs[0]] - avg_sort_vert - norm).Size())
-			ret.Append({ p_idxs[2], p_idxs[1], p_idxs[0] });
-		else
-			ret.Append({ p_idxs[0], p_idxs[1], p_idxs[2] });
-
-		//Either the first or second point gets removed based off of which is closer to the third, as that one gets "covered up" by the other two forming a line segment
-		f_dist = (sort_verts[idxs[2]] - sort_verts[idxs[0]]).Size();
-		s_dist = (sort_verts[idxs[2]] - sort_verts[idxs[1]]).Size();
-		if (f_dist < s_dist) {
-			p_idxs.RemoveAt(0);
-			idxs.RemoveAt(0);
-		}
-		else {
-			p_idxs.RemoveAt(1);
-			idxs.RemoveAt(1);
-		}
-	}
-
-	return ret;
-}
-
-TArray<FVector> ASimpleVoxel::GetVerts(TArray<int32> idx)
-{
-	TArray<FVector> ret;
-	
-	for (int i : idx)
-		ret.Emplace(verts[i]);
-
-	return ret;
 }
 
 /*
@@ -194,81 +206,76 @@ TArray<FVector> ASimpleVoxel::GetVerts(TArray<int32> idx)
 	where you know the number of rows/cols of the grid, the width of a single item in the grid, and the max values
 	the x and y vectors can take
 */
-TArray<FVector2D> ASimpleVoxel::GetUV(TArray<FVector> pos, FVector2D uv_range, FVector2D point_range, int row, int col)
+void ASimpleVoxel::GenerateUVs(FVector2D uv_range, FVector2D point_range, int row, int col)
 {
-	static int cnt = 0;
-	TArray<FVector2D> ret_uvs;
+	int cnt = 0;
+	FVector2D center = FVector2D();
+	uvs.Init(TArray<FVector2D>(), verts_arr.Num());
 
-	FVector2D center = FVector2D((cnt % col)*uv_range.X, ((cnt / col) % row)*uv_range.Y);
-
-	for (FVector p : pos)
-		ret_uvs.Emplace(FVector2D((FMath::Abs(p.X) / point_range.X)*uv_range.X + center.X, (FMath::Abs(p.Y) / point_range.Y)*uv_range.Y + center.Y));
-
-	cnt++;
-
-	return ret_uvs;
+	for (int i = 0; i < verts_arr.Num(); ++i) {
+		center = FVector2D((cnt % col)*uv_range.X, ((cnt / col) % row)*uv_range.Y);
+		TArray<FVector2D> uvs_tmp;
+		for (int j = 0; j < verts_arr[i].Num(); ++j) {
+			uvs_tmp.Emplace(FVector2D((FMath::Abs(verts_arr[i][j].X) / point_range.X)*uv_range.X + center.X,
+									  (FMath::Abs(verts_arr[i][j].Y) / point_range.Y)*uv_range.Y + center.Y));
+		}
+		uvs[i] = TArray<FVector2D>(uvs_tmp);
+		++cnt;
+	}
 }
 
-//Totally works, right?
-TArray<FVector> ASimpleVoxel::GetNormals(TArray<FVector> points)
+void ASimpleVoxel::GenerateVerts()
 {
-	TArray<FVector> ret_norms;
-	FVector norm = FVector::CrossProduct(points[1] - points[0], points[2] - points[0]).GetSafeNormal();
+	verts_arr.Init(TArray<FVector>(), face_i.Num());
 
-	for (int i = 0; i < points.Num(); i++)
-		ret_norms.Emplace(norm);
-
-	return ret_norms;
+	for (int i = 0; i < face_i.Num(); ++i) {
+		TArray<FVector> verts_arr_tmp;
+		for (int j = 0; j < face_i[i].Num(); ++j)
+			verts_arr_tmp.Emplace(verts[face_i[i][j]]);
+		verts_arr[i] = TArray<FVector>(verts_arr_tmp);
+	}
 }
 
-//Again, totally works, right?
-TArray<FProcMeshTangent> ASimpleVoxel::GetTangents(TArray<FVector> points)
+void ASimpleVoxel::GenerateNormalsAndTans()
 {
-	TArray<FProcMeshTangent> ret_tans;
-	for (int i = 0; i < points.Num(); i++)
-		ret_tans.Emplace(FProcMeshTangent((points[0] - points[1]).GetSafeNormal(), true));
-	return ret_tans;
+	tans.Init(TArray<FProcMeshTangent>(), verts_arr.Num());
+	normals.Init(TArray<FVector>(), verts_arr.Num());
+	for (int i = 0; i < verts_arr.Num(); ++i)
+		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(verts_arr[i], face_t[i], uvs[i], normals[i], tans[i]);
 }
 
 //Colors don't even seem to be used, so I just throw random colors on the points
 //Maybe this is related to vertex painting, but I doubt it
-TArray<FLinearColor> ASimpleVoxel::GetColors(TArray<FVector> points)
+void ASimpleVoxel::GenerateColors()
 {
-	TArray<FLinearColor> ret_colors;
-	for (int i = 0; i < points.Num(); i++)
-		ret_colors.Emplace(FLinearColor(FMath::FRand(), FMath::FRand(), FMath::FRand()));
-	return ret_colors;
+	colors.Init(TArray<FLinearColor>(), verts_arr.Num());
+
+	for (int i = 0; i < verts_arr.Num(); ++i) {
+		TArray<FLinearColor> colors_tmp = TArray<FLinearColor>();
+		for (int j = 0; j < verts_arr[i].Num(); ++j)
+			colors_tmp.Emplace(FLinearColor(FMath::FRand(), FMath::FRand(), FMath::FRand()));
+		colors[i] = TArray<FLinearColor>(colors_tmp);
+	}
 }
 
-void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
+void ASimpleVoxel::CreateVoxel()
 {
-	cnt = 0;
-
-	//UE_LOG(LogTemp, Warning, TEXT("Triangle sets: %d"), voxel.face_t.Num());
-
 	// Once you have the faces-as-indices, you can get the vertices needed
 	// as well as the faces-as-triangles
-	for (TArray<int32> face : voxel.face_i) {
-		voxel.face_t.Emplace(SimpleTris(face));
-		voxel.verts.Emplace(GetVerts(face));
+	for (TArray<int32> face : face_i) {
+		face_t.Emplace(SimpleTris(face));
 	}
+	GenerateVerts();
 
-	// Get the rest of the parameters that may or may not be needed
-	for (TArray<FVector> v : voxel.verts) {
-		voxel.uvs.Emplace(GetUV(v, FVector2D(0.125, 0.125), FVector2D(FMath::Abs(trans.X)+1, FMath::Abs(trans.Y)+1), 3, 6));
-		voxel.colors.Emplace(GetColors(v));
-	}
-	
-	//Do this for the kismet functions
-	voxel.tans.Init(TArray<FProcMeshTangent>(), voxel.verts.Num());
-	voxel.normals.Init(TArray<FVector>(), voxel.verts.Num());
+	GenerateUVs(FVector2D(0.125, 0.125), FVector2D(FMath::Abs(trans.X)+1, FMath::Abs(trans.Y)+1), 3, 6);
+	GenerateColors();
+	GenerateNormalsAndTans();
 
 	mesh->bUseComplexAsSimpleCollision = false;
 
-	for (int i = 0; i < voxel.verts.Num(); i++) {
-		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(voxel.verts[i], voxel.face_t[i], voxel.uvs[i], voxel.normals[i], voxel.tans[i]);
+	for (int i = 0; i < verts_arr.Num(); i++) {
 		mesh->SetMaterial(i, MyMaterial);
-		mesh->CreateMeshSection_LinearColor(i, voxel.verts[i], voxel.face_t[i], voxel.normals[i], voxel.uvs[i], TArray<FLinearColor>(), voxel.tans[i], true);
+		mesh->CreateMeshSection_LinearColor(i, verts_arr[i], face_t[i], normals[i], uvs[i], TArray<FLinearColor>(), tans[i], true);
 	}
 	
 	//These are all needed in order to have physics work on the object
@@ -319,9 +326,9 @@ void ASimpleVoxel::BeginPlay()
 	avg_sort_vert /= sort_verts.Num();
 
 	num_v = verts.Num();
-	voxel.face_i = GetFaces();
+	GenerateFaces();
 
-	CreateVoxel(FVector2D(.25, .25));
+	CreateVoxel();
 	
 }
 
@@ -338,7 +345,7 @@ void ASimpleVoxel::Tick(float DeltaTime)
 
 	// Scaling an object scales its size. Who knew? Not I
 	if (grow) {
-		scale = FVector(FMath::InterpSinInOut(1.0, 2.0, abs(sinf(time))));
+		scale = FVector(FMath::InterpSinInOut(0.5, 2.0, abs(sinf(time))));
 		mesh->SetWorldScale3D(scale);
 	}
 }

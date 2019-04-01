@@ -21,13 +21,13 @@ void AVoxelSpawner::BeginPlay()
 	Super::BeginPlay();
 	vox1 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(FVector(10, 100, 160)));
 	if (vox1 != nullptr) {
-		vox1->SetVerts(ASimpleVoxel::CUBE, true);
+		vox1->SetVerts(Shapes::Cube(), 20.0, true);
 		vox1->FinishSpawning(FTransform(FVector(10, 100, 160)));
 	}
-	vox2 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(vox1->GetActorLocation()+FVector(0, vox1->bounds.Y, 0)));
+	vox2 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(vox1->GetActorLocation()+FVector(0, vox1->GetBounds().Y, 0)));
 	if (vox2 != nullptr) {
-		vox2->SetVerts(ASimpleVoxel::CUBE, false);
-		vox2->FinishSpawning(FTransform(vox1->GetActorLocation() + FVector(0, vox1->bounds.Y, 0)));
+		vox2->SetVerts(Shapes::Cube(), 20.0, false);
+		vox2->FinishSpawning(FTransform(vox1->GetActorLocation() + FVector(0, vox1->GetBounds().Y, 0)));
 	}
 
 	FConstraintInstance constraints;
