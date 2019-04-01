@@ -43,21 +43,19 @@ private:
 
 	TArray<int32> SimpleTris(TArray<int32> idxs);
 
-	TArray<TArray<int32>> GenerateFaces();
-	TArray<FVector2D> GenerateUVs(TArray<FVector> pos, FVector2D uv_range, FVector2D point_range, int row, int col);
-	TArray<FVector> GenerateVerts(TArray<int32> idx);
-	TArray<FVector> GenerateNormals(TArray<FVector> points);
-	TArray<FProcMeshTangent> GenerateTangents(TArray<FVector> points);
-	TArray<FLinearColor> GenerateColors(TArray<FVector> points);
+	void GenerateFaces();
+	void GenerateUVs(FVector2D uv_range, FVector2D point_range, int row, int col);
+	void GenerateVerts();
+	void GenerateNormalsAndTans();
+	void GenerateColors();
 	
-	void CreateVoxel(FVector2D uv_center);
+	void CreateVoxel();
 	
 	FVector trans;
 	TArray<FVector> verts;
 	TArray<FVector> sort_verts;
 	FVector avg_sort_vert;
 	int num_v;
-	int cnt;
 	bool grow;
 
 	TArray<TArray<FVector>> verts_arr;
