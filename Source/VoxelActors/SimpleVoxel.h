@@ -27,11 +27,12 @@ public:
 
 	FVector bounds;
 
-	TArray<FVector2D> GetUVs(TArray<FVector> pos, FVector2D uv_range, FVector2D point_range, int row, int col);
-	TArray<FVector> GetVerts(TArray<int32> idx);
-	TArray<FVector> GetNormals(TArray<FVector> points);
-	TArray<FProcMeshTangent> GetTangents(TArray<FVector> points);
-	TArray<FLinearColor> GetColors(TArray<FVector> points);
+	TArray<TArray<FVector2D>> GetUVs();
+	TArray<TArray<FVector>> GetVerts();
+	TArray<TArray<FVector>> GetNormals();
+	TArray<TArray<FProcMeshTangent>> GetTangents();
+	TArray<TArray<FLinearColor>> GetColors();
+	TArray<TArray<int32>> GetFaces();
 
 private:
 	// Called when the game starts or when spawned
@@ -40,9 +41,9 @@ private:
 	int TriFromI(int a, int b, int c);
 	int TriFromI(int a, int b, int c, int n);
 
-	TArray<TArray<int32>> GetFaces();
 	TArray<int32> SimpleTris(TArray<int32> idxs);
 
+	TArray<TArray<int32>> GenerateFaces();
 	TArray<FVector2D> GenerateUVs(TArray<FVector> pos, FVector2D uv_range, FVector2D point_range, int row, int col);
 	TArray<FVector> GenerateVerts(TArray<int32> idx);
 	TArray<FVector> GenerateNormals(TArray<FVector> points);

@@ -37,6 +37,36 @@ void ASimpleVoxel::SetVerts(TArray<FVector> verts, float scale, bool grow)
 	this->grow = grow;
 }
 
+TArray<TArray<FVector2D>> ASimpleVoxel::GetUVs()
+{
+	return uvs;
+}
+
+TArray<TArray<FVector>> ASimpleVoxel::GetVerts()
+{
+	return verts_arr;
+}
+
+TArray<TArray<FVector>> ASimpleVoxel::GetNormals()
+{
+	return normals;
+}
+
+TArray<TArray<FProcMeshTangent>> ASimpleVoxel::GetTangents()
+{
+	return tans;
+}
+
+TArray<TArray<FLinearColor>> ASimpleVoxel::GetColors()
+{
+	return colors;
+}
+
+TArray<TArray<int32>> ASimpleVoxel::GetFaces()
+{
+	return face_i;
+}
+
 //a < b < c
 //Indexes linear array of triangles from the three points defining the triangle
 int ASimpleVoxel::TriFromI(int a, int b, int c) {
@@ -49,7 +79,7 @@ int ASimpleVoxel::TriFromI(int a, int b, int c, int n) {
 	return ((n - 2)*(n - 1)*n - (n - 2 - a)*(n - 1 - a)*(n - a)) / 6 + ((n - 2 - a)*(n - 1 - a) - (n - 1 - b)*(n - b)) / 2 + c - (b + 1);
 }
 
-TArray<TArray<int32>> ASimpleVoxel::GetFaces()
+TArray<TArray<int32>> ASimpleVoxel::GenerateFaces()
 {
 	TArray<bool> checked_tri;
 	TArray<TArray<int32>> ret_face_i;
@@ -169,7 +199,7 @@ TArray<int32> ASimpleVoxel::SimpleTris(TArray<int32> idxs) {
 	return ret;
 }
 
-TArray<FVector> ASimpleVoxel::GetVerts(TArray<int32> idx)
+TArray<FVector> ASimpleVoxel::GenerateVerts(TArray<int32> idx)
 {
 	TArray<FVector> ret;
 	
@@ -184,7 +214,7 @@ TArray<FVector> ASimpleVoxel::GetVerts(TArray<int32> idx)
 	where you know the number of rows/cols of the grid, the width of a single item in the grid, and the max values
 	the x and y vectors can take
 */
-TArray<FVector2D> ASimpleVoxel::GetUVs(TArray<FVector> pos, FVector2D uv_range, FVector2D point_range, int row, int col)
+TArray<FVector2D> ASimpleVoxel::GenerateUVs(TArray<FVector> pos, FVector2D uv_range, FVector2D point_range, int row, int col)
 {
 	static int cnt = 0;
 	TArray<FVector2D> ret_uvs;
@@ -200,7 +230,7 @@ TArray<FVector2D> ASimpleVoxel::GetUVs(TArray<FVector> pos, FVector2D uv_range, 
 }
 
 //Totally works, right?
-TArray<FVector> ASimpleVoxel::GetNormals(TArray<FVector> points)
+TArray<FVector> ASimpleVoxel::GenerateNormals(TArray<FVector> points)
 {
 	TArray<FVector> ret_norms;
 	FVector norm = FVector::CrossProduct(points[1] - points[0], points[2] - points[0]).GetSafeNormal();
@@ -212,7 +242,7 @@ TArray<FVector> ASimpleVoxel::GetNormals(TArray<FVector> points)
 }
 
 //Again, totally works, right?
-TArray<FProcMeshTangent> ASimpleVoxel::GetTangents(TArray<FVector> points)
+TArray<FProcMeshTangent> ASimpleVoxel::GenerateTangents(TArray<FVector> points)
 {
 	TArray<FProcMeshTangent> ret_tans;
 	for (int i = 0; i < points.Num(); i++)
@@ -222,7 +252,7 @@ TArray<FProcMeshTangent> ASimpleVoxel::GetTangents(TArray<FVector> points)
 
 //Colors don't even seem to be used, so I just throw random colors on the points
 //Maybe this is related to vertex painting, but I doubt it
-TArray<FLinearColor> ASimpleVoxel::GetColors(TArray<FVector> points)
+TArray<FLinearColor> ASimpleVoxel::GenerateColors(TArray<FVector> points)
 {
 	TArray<FLinearColor> ret_colors;
 	for (int i = 0; i < points.Num(); i++)
@@ -240,13 +270,13 @@ void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 	// as well as the faces-as-triangles
 	for (TArray<int32> face : face_i) {
 		face_t.Emplace(SimpleTris(face));
-		verts_arr.Emplace(GetVerts(face));
+		verts_arr.Emplace(GenerateVerts(face));
 	}
 
 	// Get the rest of the parameters that may or may not be needed
 	for (TArray<FVector> v : verts_arr) {
-		uvs.Emplace(GetUVs(v, FVector2D(0.125, 0.125), FVector2D(FMath::Abs(trans.X)+1, FMath::Abs(trans.Y)+1), 3, 6));
-		colors.Emplace(GetColors(v));
+		uvs.Emplace(GenerateUVs(v, FVector2D(0.125, 0.125), FVector2D(FMath::Abs(trans.X)+1, FMath::Abs(trans.Y)+1), 3, 6));
+		colors.Emplace(GenerateColors(v));
 	}
 	
 	//Do this for the kismet functions
@@ -309,7 +339,7 @@ void ASimpleVoxel::BeginPlay()
 	avg_sort_vert /= sort_verts.Num();
 
 	num_v = verts.Num();
-	face_i = GetFaces();
+	face_i = GenerateFaces();
 
 	CreateVoxel(FVector2D(.25, .25));
 	
