@@ -75,7 +75,7 @@ TArray<TArray<int32>> ASimpleVoxel::GetFaces()
 //a < b < c
 //Indexes linear array of triangles from the three points defining the triangle
 int ASimpleVoxel::TriFromI(int a, int b, int c) {
-	return TriFromI(a, b, c, num_v);
+	return TriFromI(a, b, c, verts.Num());
 }
 
 int ASimpleVoxel::TriFromI(int a, int b, int c, int n) {
@@ -89,9 +89,15 @@ TArray<int32> ASimpleVoxel::SimpleTris(TArray<int32> idxs) {
 	TArray<int32> ret;
 
 	TArray<int32> p_idxs;
+	FVector avg_sort_vert = FVector(0);
 
 	for (int i = 0; i < idxs.Num(); i++)
 		p_idxs.Emplace(i);
+
+	for (FVector sv : sort_verts) {
+		avg_sort_vert += sv;
+	}
+	avg_sort_vert /= sort_verts.Num();
 
 	//First, second distances
 	float f_dist, s_dist;
@@ -135,7 +141,7 @@ void ASimpleVoxel::GenerateFaces()
 {
 	TArray<bool> checked_tri;
 	int num_t;
-	
+	int32 num_v = verts.Num();
 
 	num_t = num_v*(num_v - 1)*(num_v - 2) / 6;
 	checked_tri.Init(false, num_t);
@@ -312,22 +318,14 @@ void ASimpleVoxel::BeginPlay()
 
 	// Order from closest to furthest away from origin
 	verts.Sort([this](const FVector A,  const FVector B){
-		return (A-this->trans).Size() < (B-this->trans).Size();
+		return (A-trans).Size() < (B-trans).Size();
 	});
 
 	for (FVector v : verts) {
 		sort_verts.Emplace(v - trans);
 	}
 
-	avg_sort_vert = FVector(0);
-	for (FVector sv : sort_verts) {
-		avg_sort_vert += sv;
-	}
-	avg_sort_vert /= sort_verts.Num();
-
-	num_v = verts.Num();
 	GenerateFaces();
-
 	CreateVoxel();
 	
 }

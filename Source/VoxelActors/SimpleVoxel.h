@@ -53,8 +53,6 @@ private:
 	FVector trans;
 	TArray<FVector> verts;
 	TArray<FVector> sort_verts;
-	FVector avg_sort_vert;
-	int num_v;
 	bool grow;
 
 	FVector bounds;
