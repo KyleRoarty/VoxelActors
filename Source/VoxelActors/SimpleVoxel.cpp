@@ -5,20 +5,8 @@
 #include "Runtime/Engine/Classes/Materials/Material.h"
 
 
-#define PHI (1+sqrt(5))/2.0
-#define IPHI 2.0/(1+sqrt(5))
 
-// Basic shape defines
-const TArray<FVector> ASimpleVoxel::PENTAGON_3D = { FVector(0,-20,0), FVector(-19,-6,0), FVector(-12,16,0), FVector(12,16,0), FVector(19,-6,0), FVector(0,-20,20), FVector(-19,-6,20), FVector(-12,16,20), FVector(12,16,20), FVector(19,-6,20) };
-const TArray<FVector> ASimpleVoxel::RTRI_3D = { 20*FVector(-1,-1,-1), 20*FVector(1,-1,-1), 20*FVector(0,0,-1), 20*FVector(-1,-1,1), 20*FVector(1,-1,1), 20*FVector(0,0,1) };
-const TArray<FVector> ASimpleVoxel::CUBE = { 20 * FVector(-1,-1,-1), 20 * FVector(1,-1,-1), 20 * FVector(1,1,-1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(1,-1,1), 20 * FVector(1,1,1), 20 * FVector(-1,1,1) };
-const TArray<FVector> ASimpleVoxel::DODECAHEDRON = { 20 * FVector(1,1,1), 20 * FVector(1,1,-1), 20 * FVector(1,-1,1), 20 * FVector(1,-1,-1), 20 * FVector(-1,1,1), 20 * FVector(-1,1,-1), 20 * FVector(-1,-1,1), 20 * FVector(-1,-1,-1),
-													 20 * FVector(0,PHI,IPHI), 20 * FVector(0,PHI,-IPHI), 20 * FVector(0,-PHI,IPHI),20 * FVector(0,-PHI,-IPHI),
-													 20 * FVector(IPHI,0,PHI), 20 * FVector(IPHI,0,-PHI),20 * FVector(-IPHI,0,PHI),20 * FVector(-IPHI,0,-PHI),
-													 20 * FVector(PHI,IPHI,0),20 * FVector(PHI,-IPHI,0),20 * FVector(-PHI,IPHI,0),20 * FVector(-PHI,-IPHI, 0) };
-const TArray<FVector> ASimpleVoxel::ICOSAHEDRON = { 20 * FVector(0,1,PHI), 20 * FVector(0,1,-PHI), 20 * FVector(0,-1,PHI), 20 * FVector(0,-1,-PHI),
-													20 * FVector(1,PHI,0), 20 * FVector(1,-PHI,0), 20 * FVector(-1,PHI,0), 20 * FVector(-1,-PHI,0),
-													20 * FVector(PHI,0,1), 20 * FVector(PHI,0,-1), 20 * FVector(-PHI,0,1), 20 * FVector(-PHI,0,-1) };
+
 // Sets default values
 ASimpleVoxel::ASimpleVoxel()
 {
@@ -41,9 +29,11 @@ ASimpleVoxel::ASimpleVoxel()
 
 }
 
-void ASimpleVoxel::SetVerts(TArray<FVector> verts, bool grow)
+void ASimpleVoxel::SetVerts(TArray<FVector> verts, float scale, bool grow)
 {
-	this->verts = verts;
+	this->verts = TArray<FVector>(verts);
+	for (FVector& vert : this->verts)
+		vert = scale * vert;
 	this->grow = grow;
 }
 
@@ -194,7 +184,7 @@ TArray<FVector> ASimpleVoxel::GetVerts(TArray<int32> idx)
 	where you know the number of rows/cols of the grid, the width of a single item in the grid, and the max values
 	the x and y vectors can take
 */
-TArray<FVector2D> ASimpleVoxel::GetUV(TArray<FVector> pos, FVector2D uv_range, FVector2D point_range, int row, int col)
+TArray<FVector2D> ASimpleVoxel::GetUVs(TArray<FVector> pos, FVector2D uv_range, FVector2D point_range, int row, int col)
 {
 	static int cnt = 0;
 	TArray<FVector2D> ret_uvs;
@@ -244,31 +234,31 @@ void ASimpleVoxel::CreateVoxel(FVector2D uv_center)
 {
 	cnt = 0;
 
-	//UE_LOG(LogTemp, Warning, TEXT("Triangle sets: %d"), voxel.face_t.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("Triangle sets: %d"), face_t.Num());
 
 	// Once you have the faces-as-indices, you can get the vertices needed
 	// as well as the faces-as-triangles
-	for (TArray<int32> face : voxel.face_i) {
-		voxel.face_t.Emplace(SimpleTris(face));
-		voxel.verts.Emplace(GetVerts(face));
+	for (TArray<int32> face : face_i) {
+		face_t.Emplace(SimpleTris(face));
+		verts_arr.Emplace(GetVerts(face));
 	}
 
 	// Get the rest of the parameters that may or may not be needed
-	for (TArray<FVector> v : voxel.verts) {
-		voxel.uvs.Emplace(GetUV(v, FVector2D(0.125, 0.125), FVector2D(FMath::Abs(trans.X)+1, FMath::Abs(trans.Y)+1), 3, 6));
-		voxel.colors.Emplace(GetColors(v));
+	for (TArray<FVector> v : verts_arr) {
+		uvs.Emplace(GetUVs(v, FVector2D(0.125, 0.125), FVector2D(FMath::Abs(trans.X)+1, FMath::Abs(trans.Y)+1), 3, 6));
+		colors.Emplace(GetColors(v));
 	}
 	
 	//Do this for the kismet functions
-	voxel.tans.Init(TArray<FProcMeshTangent>(), voxel.verts.Num());
-	voxel.normals.Init(TArray<FVector>(), voxel.verts.Num());
+	tans.Init(TArray<FProcMeshTangent>(), verts_arr.Num());
+	normals.Init(TArray<FVector>(), verts_arr.Num());
 
 	mesh->bUseComplexAsSimpleCollision = false;
 
-	for (int i = 0; i < voxel.verts.Num(); i++) {
-		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(voxel.verts[i], voxel.face_t[i], voxel.uvs[i], voxel.normals[i], voxel.tans[i]);
+	for (int i = 0; i < verts_arr.Num(); i++) {
+		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(verts_arr[i], face_t[i], uvs[i], normals[i], tans[i]);
 		mesh->SetMaterial(i, MyMaterial);
-		mesh->CreateMeshSection_LinearColor(i, voxel.verts[i], voxel.face_t[i], voxel.normals[i], voxel.uvs[i], TArray<FLinearColor>(), voxel.tans[i], true);
+		mesh->CreateMeshSection_LinearColor(i, verts_arr[i], face_t[i], normals[i], uvs[i], TArray<FLinearColor>(), tans[i], true);
 	}
 	
 	//These are all needed in order to have physics work on the object
@@ -319,7 +309,7 @@ void ASimpleVoxel::BeginPlay()
 	avg_sort_vert /= sort_verts.Num();
 
 	num_v = verts.Num();
-	voxel.face_i = GetFaces();
+	face_i = GetFaces();
 
 	CreateVoxel(FVector2D(.25, .25));
 	
@@ -338,7 +328,7 @@ void ASimpleVoxel::Tick(float DeltaTime)
 
 	// Scaling an object scales its size. Who knew? Not I
 	if (grow) {
-		scale = FVector(FMath::InterpSinInOut(1.0, 2.0, abs(sinf(time))));
+		scale = FVector(FMath::InterpSinInOut(0.5, 2.0, abs(sinf(time))));
 		mesh->SetWorldScale3D(scale);
 	}
 }
