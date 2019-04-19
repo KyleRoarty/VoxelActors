@@ -29,7 +29,7 @@ ASimpleVoxel::ASimpleVoxel()
 
 }
 
-void ASimpleVoxel::SetVerts(TArray<FVector> verts, float scale, bool grow)
+void ASimpleVoxel::Init(TArray<FVector> verts, float scale, bool grow)
 {
 	this->verts = TArray<FVector>(verts);
 	for (FVector& vert : this->verts)

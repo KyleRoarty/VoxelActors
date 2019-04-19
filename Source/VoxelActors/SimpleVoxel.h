@@ -23,7 +23,7 @@ public:
 	UPROPERTY(EditAnywhere)
 		UMaterial *MyMaterial;
 
-	void SetVerts(TArray<FVector> verts, float scale, bool grow);
+	void Init(TArray<FVector> verts, float scale, bool grow);
 
 	FVector GetBounds();
 	TArray<TArray<FVector2D>> GetUVs();
