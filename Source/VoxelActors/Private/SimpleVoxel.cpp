@@ -44,32 +44,47 @@ FVector ASimpleVoxel::GetBounds()
 
 TArray<TArray<FVector2D>> ASimpleVoxel::GetUVs()
 {
-	return uvs;
+	TArray<TArray<FVector2D>> ret;
+	for (Face f : faces)
+		ret.Emplace(f.GetUVs());
+	return ret;
 }
 
 TArray<TArray<FVector>> ASimpleVoxel::GetVerts()
 {
-	return verts_arr;
+	TArray<TArray<FVector>> ret;
+	for (Face f : faces)
+		ret.Emplace(f.GetPoints());
+	return ret;
 }
 
 TArray<TArray<FVector>> ASimpleVoxel::GetNormals()
 {
-	return normals;
+	TArray<TArray<FVector>> ret;
+	for (Face f : faces)
+		ret.Emplace(f.GetNormals());
+	return ret;
 }
 
 TArray<TArray<FProcMeshTangent>> ASimpleVoxel::GetTangents()
 {
-	return tans;
+	TArray<TArray<FProcMeshTangent>> ret;
+	for (Face f : faces)
+		ret.Emplace(f.GetTangents());
+	return ret;
 }
 
 TArray<TArray<FLinearColor>> ASimpleVoxel::GetColors()
 {
-	return colors;
+	TArray<TArray<FLinearColor>> ret;
+	for (Face f : faces)
+		ret.Emplace(f.GetColors());
+	return ret;
 }
 
-TArray<TArray<int32>> ASimpleVoxel::GetFaces()
+TArray<Face> ASimpleVoxel::GetFaces()
 {
-	return face_i;
+	return faces;
 }
 
 //a < b < c
@@ -82,59 +97,6 @@ int ASimpleVoxel::TriFromI(int a, int b, int c, int n) {
 	if (a >= b || b >= c)
 		return -1;
 	return ((n - 2)*(n - 1)*n - (n - 2 - a)*(n - 1 - a)*(n - a)) / 6 + ((n - 2 - a)*(n - 1 - a) - (n - 1 - b)*(n - b)) / 2 + c - (b + 1);
-}
-
-//Generates triangle triplets from indexes on a face passed in
-TArray<int32> ASimpleVoxel::SimpleTris(TArray<int32> idxs) {
-	TArray<int32> ret;
-
-	TArray<int32> p_idxs;
-	FVector avg_sort_vert = FVector::ZeroVector;
-
-	for (int i = 0; i < idxs.Num(); i++)
-		p_idxs.Emplace(i);
-
-	for (FVector sv : sort_verts) {
-		avg_sort_vert += sv;
-	}
-	avg_sort_vert /= sort_verts.Num();
-
-	//First, second distances
-	float f_dist, s_dist;
-	FVector norm;
-
-	while (idxs.Num() >= 3) {
-		norm = FVector::CrossProduct(sort_verts[idxs[1]] - sort_verts[idxs[0]], sort_verts[idxs[2]] - sort_verts[idxs[0]]).GetSafeNormal();
-		norm.Normalize();
-		/*	Only use the triplet that is facing outward
-			sort_verts are all >= 0
-			Need to normalize the point so that it's centered around 0,0,0
-			one of norm_point + norm and norm_point - norm will be closer to 0,0,0
-			The triangle of the one closer to 0,0,0 will be facing inwards
-			We want the triangle that faces outwards, so we choose the one that is larger
-
-			**Note: If this stops working, take the average of the points and use that as the point we compare against
-			**Note 2: It is doubtful that this will work with concave shapes
-		*/ 
-		if ((sort_verts[idxs[0]] - avg_sort_vert + norm).Size() >= (sort_verts[idxs[0]] - avg_sort_vert - norm).Size())
-			ret.Append({ p_idxs[2], p_idxs[1], p_idxs[0] });
-		else
-			ret.Append({ p_idxs[0], p_idxs[1], p_idxs[2] });
-
-		//Either the first or second point gets removed based off of which is closer to the third, as that one gets "covered up" by the other two forming a line segment
-		f_dist = (sort_verts[idxs[2]] - sort_verts[idxs[0]]).Size();
-		s_dist = (sort_verts[idxs[2]] - sort_verts[idxs[1]]).Size();
-		if (f_dist < s_dist) {
-			p_idxs.RemoveAt(0);
-			idxs.RemoveAt(0);
-		}
-		else {
-			p_idxs.RemoveAt(1);
-			idxs.RemoveAt(1);
-		}
-	}
-
-	return ret;
 }
 
 void ASimpleVoxel::GenerateFaces()
@@ -212,7 +174,6 @@ void ASimpleVoxel::GenerateFaces()
 				avg /= in_plane_p.Num();
 
 				faces.Emplace(Face(in_plane_p, avg));
-				//face_i.Emplace(in_plane);
 			}
 		}
 	}
@@ -227,8 +188,6 @@ void ASimpleVoxel::GenerateUVs(FVector2D uv_range, FVector2D point_range, int ro
 {
 	int cnt = 0;
 	FVector2D center = FVector2D();
-	uvs.Init(TArray<FVector2D>(), verts_arr.Num());
-
 
 	for (Face& face : faces) {
 		center = FVector2D((cnt % col)*uv_range.X, ((cnt / col) % row)*uv_range.Y);
@@ -241,36 +200,10 @@ void ASimpleVoxel::GenerateUVs(FVector2D uv_range, FVector2D point_range, int ro
 		face.SetUVs(uvs_tmp);
 		++cnt;
 	}
-
-	/*for (int i = 0; i < verts_arr.Num(); ++i) {
-		center = FVector2D((cnt % col)*uv_range.X, ((cnt / col) % row)*uv_range.Y);
-		TArray<FVector2D> uvs_tmp;
-		for (int j = 0; j < verts_arr[i].Num(); ++j) {
-			uvs_tmp.Emplace(FVector2D((FMath::Abs(verts_arr[i][j].X) / point_range.X)*uv_range.X + center.X,
-									  (FMath::Abs(verts_arr[i][j].Y) / point_range.Y)*uv_range.Y + center.Y));
-		}
-		uvs[i] = TArray<FVector2D>(uvs_tmp);
-		++cnt;
-	}*/
-}
-
-void ASimpleVoxel::GenerateVerts()
-{
-	verts_arr.Init(TArray<FVector>(), face_i.Num());
-
-	for (int i = 0; i < face_i.Num(); ++i) {
-		TArray<FVector> verts_arr_tmp;
-		for (int j = 0; j < face_i[i].Num(); ++j)
-			verts_arr_tmp.Emplace(verts[face_i[i][j]]);
-		verts_arr[i] = TArray<FVector>(verts_arr_tmp);
-	}
 }
 
 void ASimpleVoxel::GenerateNormalsAndTans()
 {
-	tans.Init(TArray<FProcMeshTangent>(), verts_arr.Num());
-	normals.Init(TArray<FVector>(), verts_arr.Num());
-
 	for (Face& face : faces) {
 		TArray<FProcMeshTangent> tans_tmp = TArray<FProcMeshTangent>();
 		TArray<FVector> norms_tmp = TArray<FVector>();
@@ -278,42 +211,22 @@ void ASimpleVoxel::GenerateNormalsAndTans()
 		face.SetNormals(norms_tmp);
 		face.SetTangents(tans_tmp);
 	}
-
-
-	/*for (int i = 0; i < verts_arr.Num(); ++i)
-		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(verts_arr[i], face_t[i], uvs[i], normals[i], tans[i]);*/
 }
 
 //Colors don't even seem to be used, so I just throw random colors on the points
 //Maybe this is related to vertex painting, but I doubt it
 void ASimpleVoxel::GenerateColors()
 {
-	colors.Init(TArray<FLinearColor>(), verts_arr.Num());
-
 	for (Face& face : faces) {
 		TArray<FLinearColor> colors_tmp = TArray<FLinearColor>();
 		for (int i = 0; i < face.NumPoints(); ++i)
 			colors_tmp.Emplace(FLinearColor(FMath::FRand(), FMath::FRand(), FMath::FRand()));
 		face.SetColors(colors_tmp);
 	}
-
-	/*for (int i = 0; i < verts_arr.Num(); ++i) {
-		TArray<FLinearColor> colors_tmp = TArray<FLinearColor>();
-		for (int j = 0; j < verts_arr[i].Num(); ++j)
-			colors_tmp.Emplace(FLinearColor(FMath::FRand(), FMath::FRand(), FMath::FRand()));
-		colors[i] = TArray<FLinearColor>(colors_tmp);
-	}*/
 }
 
 void ASimpleVoxel::CreateVoxel()
 {
-	// Once you have the faces-as-indices, you can get the vertices needed
-	// as well as the faces-as-triangles
-	/*for (TArray<int32> face : face_i) {
-		face_t.Emplace(SimpleTris(face));
-	}
-	GenerateVerts();*/
-
 	GenerateUVs(FVector2D(0.125, 0.125), FVector2D(FMath::Abs(trans.X)+1, FMath::Abs(trans.Y)+1), 3, 6);
 	GenerateColors();
 	GenerateNormalsAndTans();
@@ -322,7 +235,6 @@ void ASimpleVoxel::CreateVoxel()
 
 	for (int i = 0; i < faces.Num(); i++) {
 		mesh->SetMaterial(i, MyMaterial);
-		//mesh->CreateMeshSection_LinearColor(i, verts_arr[i], face_t[i], normals[i], uvs[i], TArray<FLinearColor>(), tans[i], true);
 		mesh->CreateMeshSection_LinearColor(i, faces[i].GetPoints(), faces[i].GetTris(), faces[i].GetNormals(),
 											   faces[i].GetUVs(), faces[i].GetColors(), faces[i].GetTangents(), true);
 	}
@@ -358,15 +270,6 @@ void ASimpleVoxel::BeginPlay()
 	}
 
 	bounds -= trans;
-
-	// Order from closest to furthest away from origin
-	verts.Sort([this](const FVector A,  const FVector B){
-		return (A-trans).Size() < (B-trans).Size();
-	});
-
-	for (FVector v : verts) {
-		sort_verts.Emplace(v - trans);
-	}
 
 	GenerateFaces();
 	CreateVoxel();
