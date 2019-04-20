@@ -89,7 +89,7 @@ TArray<int32> ASimpleVoxel::SimpleTris(TArray<int32> idxs) {
 	TArray<int32> ret;
 
 	TArray<int32> p_idxs;
-	FVector avg_sort_vert = FVector(0);
+	FVector avg_sort_vert = FVector::ZeroVector;
 
 	for (int i = 0; i < idxs.Num(); i++)
 		p_idxs.Emplace(i);
@@ -148,6 +148,8 @@ void ASimpleVoxel::GenerateFaces()
 
 
 	TArray<int> in_plane;
+	TArray<FVector> in_plane_p;
+	FVector avg;
 	FVector p_norm;
 	bool pos, neg;
 	float res;
@@ -198,10 +200,19 @@ void ASimpleVoxel::GenerateFaces()
 					continue;
 				}
 
-				for (int i : in_plane)
+				//for (int i : in_plane)
 					//UE_LOG(LogTemp, Warning, TEXT("%d"), i);
 
-				face_i.Emplace(in_plane);
+				in_plane_p.Empty();
+				avg = FVector::ZeroVector;
+				for (int i : in_plane) {
+					in_plane_p.Emplace(verts[i]);
+					avg += verts[i];
+				}
+				avg /= in_plane_p.Num();
+
+				faces.Emplace(Face(in_plane_p, avg));
+				//face_i.Emplace(in_plane);
 			}
 		}
 	}
@@ -218,7 +229,20 @@ void ASimpleVoxel::GenerateUVs(FVector2D uv_range, FVector2D point_range, int ro
 	FVector2D center = FVector2D();
 	uvs.Init(TArray<FVector2D>(), verts_arr.Num());
 
-	for (int i = 0; i < verts_arr.Num(); ++i) {
+
+	for (Face& face : faces) {
+		center = FVector2D((cnt % col)*uv_range.X, ((cnt / col) % row)*uv_range.Y);
+		TArray<FVector2D> uvs_tmp;
+		TArray<FVector> face_pts = face.GetPoints();
+		for (FVector pt : face_pts) {
+			uvs_tmp.Emplace(FVector2D((FMath::Abs(pt.X) / point_range.X)*uv_range.X + center.X,
+									  (FMath::Abs(pt.Y) / point_range.Y)*uv_range.Y + center.Y));
+		}
+		face.SetUVs(uvs_tmp);
+		++cnt;
+	}
+
+	/*for (int i = 0; i < verts_arr.Num(); ++i) {
 		center = FVector2D((cnt % col)*uv_range.X, ((cnt / col) % row)*uv_range.Y);
 		TArray<FVector2D> uvs_tmp;
 		for (int j = 0; j < verts_arr[i].Num(); ++j) {
@@ -227,7 +251,7 @@ void ASimpleVoxel::GenerateUVs(FVector2D uv_range, FVector2D point_range, int ro
 		}
 		uvs[i] = TArray<FVector2D>(uvs_tmp);
 		++cnt;
-	}
+	}*/
 }
 
 void ASimpleVoxel::GenerateVerts()
@@ -246,8 +270,18 @@ void ASimpleVoxel::GenerateNormalsAndTans()
 {
 	tans.Init(TArray<FProcMeshTangent>(), verts_arr.Num());
 	normals.Init(TArray<FVector>(), verts_arr.Num());
-	for (int i = 0; i < verts_arr.Num(); ++i)
-		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(verts_arr[i], face_t[i], uvs[i], normals[i], tans[i]);
+
+	for (Face& face : faces) {
+		TArray<FProcMeshTangent> tans_tmp = TArray<FProcMeshTangent>();
+		TArray<FVector> norms_tmp = TArray<FVector>();
+		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(face.GetPoints(), face.GetTris(), face.GetUVs(), norms_tmp, tans_tmp);
+		face.SetNormals(norms_tmp);
+		face.SetTangents(tans_tmp);
+	}
+
+
+	/*for (int i = 0; i < verts_arr.Num(); ++i)
+		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(verts_arr[i], face_t[i], uvs[i], normals[i], tans[i]);*/
 }
 
 //Colors don't even seem to be used, so I just throw random colors on the points
@@ -256,22 +290,29 @@ void ASimpleVoxel::GenerateColors()
 {
 	colors.Init(TArray<FLinearColor>(), verts_arr.Num());
 
-	for (int i = 0; i < verts_arr.Num(); ++i) {
+	for (Face& face : faces) {
+		TArray<FLinearColor> colors_tmp = TArray<FLinearColor>();
+		for (int i = 0; i < face.NumPoints(); ++i)
+			colors_tmp.Emplace(FLinearColor(FMath::FRand(), FMath::FRand(), FMath::FRand()));
+		face.SetColors(colors_tmp);
+	}
+
+	/*for (int i = 0; i < verts_arr.Num(); ++i) {
 		TArray<FLinearColor> colors_tmp = TArray<FLinearColor>();
 		for (int j = 0; j < verts_arr[i].Num(); ++j)
 			colors_tmp.Emplace(FLinearColor(FMath::FRand(), FMath::FRand(), FMath::FRand()));
 		colors[i] = TArray<FLinearColor>(colors_tmp);
-	}
+	}*/
 }
 
 void ASimpleVoxel::CreateVoxel()
 {
 	// Once you have the faces-as-indices, you can get the vertices needed
 	// as well as the faces-as-triangles
-	for (TArray<int32> face : face_i) {
+	/*for (TArray<int32> face : face_i) {
 		face_t.Emplace(SimpleTris(face));
 	}
-	GenerateVerts();
+	GenerateVerts();*/
 
 	GenerateUVs(FVector2D(0.125, 0.125), FVector2D(FMath::Abs(trans.X)+1, FMath::Abs(trans.Y)+1), 3, 6);
 	GenerateColors();
@@ -279,9 +320,11 @@ void ASimpleVoxel::CreateVoxel()
 
 	mesh->bUseComplexAsSimpleCollision = false;
 
-	for (int i = 0; i < verts_arr.Num(); i++) {
+	for (int i = 0; i < faces.Num(); i++) {
 		mesh->SetMaterial(i, MyMaterial);
-		mesh->CreateMeshSection_LinearColor(i, verts_arr[i], face_t[i], normals[i], uvs[i], TArray<FLinearColor>(), tans[i], true);
+		//mesh->CreateMeshSection_LinearColor(i, verts_arr[i], face_t[i], normals[i], uvs[i], TArray<FLinearColor>(), tans[i], true);
+		mesh->CreateMeshSection_LinearColor(i, faces[i].GetPoints(), faces[i].GetTris(), faces[i].GetNormals(),
+											   faces[i].GetUVs(), faces[i].GetColors(), faces[i].GetTangents(), true);
 	}
 	
 	//These are all needed in order to have physics work on the object

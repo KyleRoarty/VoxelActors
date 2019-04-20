@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "KismetProceduralMeshLibrary.h"
 #include "ProceduralMeshComponent.h"
+#include "Face.h"
 //Must be last include
 #include "SimpleVoxel.generated.h"
 
@@ -57,6 +58,7 @@ private:
 
 	FVector bounds;
 
+	TArray<Face> faces;
 	TArray<TArray<FVector>> verts_arr;
 	TArray<TArray<FVector>> normals;
 	TArray<TArray<FVector2D>> uvs;

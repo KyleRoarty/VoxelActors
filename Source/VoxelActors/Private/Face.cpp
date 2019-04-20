@@ -4,22 +4,37 @@
 
 Face::Face(TArray<FVector> points, FVector offset)
 {
+	this->offset = offset;
+
 	this->furthest = FVector::ZeroVector;
 	for (FVector p : points)
 		if (p.Size() > this->furthest.Size())
 			this->furthest = p;
 
-	this->points = points;
-	this->points.Sort([this](const FVector A, const FVector B) {
+	this->ret_points = points;
+	this->ret_points.Sort([this](const FVector A, const FVector B) {
 		return (A - furthest).Size() < (B - furthest).Size();
 	});
 
-	this->offset = offset;
+	this->points = ret_points;
+	for (FVector& point : this->points)
+		point -= offset;
+
 	GenerateTris();
 }
 
 Face::~Face()
 {
+}
+
+TArray<FVector> Face::GetPoints()
+{
+	return ret_points;
+}
+
+int32 Face::NumPoints()
+{
+	return points.Num();
 }
 
 TArray<int32> Face::GetTris()

@@ -15,6 +15,8 @@ public:
 	Face(TArray<FVector> points, FVector offset);
 	~Face();
 
+	TArray<FVector> GetPoints();
+	int32 NumPoints();
 
 	TArray<int32> GetTris();
 
@@ -32,6 +34,7 @@ public:
 
 private:
 	TArray<FVector> points;
+	TArray<FVector> ret_points;
 	FVector offset;
 	FVector furthest;
 
