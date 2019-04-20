@@ -3,6 +3,7 @@
 #include "SimpleVoxel.h"
 #include "ConstructorHelpers.h"
 #include "Runtime/Engine/Classes/Materials/Material.h"
+#include "ParallelFor.h"
 
 
 
@@ -116,6 +117,9 @@ void ASimpleVoxel::GenerateFaces()
 	bool pos, neg;
 	float res;
 
+	TArray<TArray<FVector>> points_arr;
+	TArray<FVector> avg_arr;
+
 	/*
 		Generates a plane from all triplets of verts
 		Checks if all of the verts are on one side of the plane (Including the plane itself)
@@ -173,10 +177,20 @@ void ASimpleVoxel::GenerateFaces()
 				}
 				avg /= in_plane_p.Num();
 
-				faces.Emplace(Face(in_plane_p, avg));
+				points_arr.Emplace(in_plane_p);
+				avg_arr.Emplace(avg);
+
+				//faces.Emplace(Face(in_plane_p, avg));
 			}
 		}
 	}
+
+	faces.Init(Face(), points_arr.Num());
+	ParallelFor(faces.Num(), [&](int32 idx) {
+		faces[idx] = Face(points_arr[idx], avg_arr[idx]);
+	}, false);
+	
+
 }
 
 /*

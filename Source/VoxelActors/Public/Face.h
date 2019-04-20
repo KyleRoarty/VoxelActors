@@ -12,6 +12,7 @@
 class VOXELACTORS_API Face
 {
 public:
+	Face();
 	Face(TArray<FVector> points, FVector offset);
 	~Face();
 

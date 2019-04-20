@@ -2,6 +2,11 @@
 
 #include "Face.h"
 
+Face::Face()
+{
+
+}
+
 Face::Face(TArray<FVector> points, FVector offset)
 {
 	this->offset = offset;
