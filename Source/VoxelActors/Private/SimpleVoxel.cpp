@@ -120,6 +120,9 @@ void ASimpleVoxel::GenerateFaces()
 	TArray<TArray<FVector>> points_arr;
 	TArray<FVector> avg_arr;
 
+	// Used for max distance a point can be away from a plane to be considered on plane
+	float epsilon = 1;
+
 	/*
 		Generates a plane from all triplets of verts
 		Checks if all of the verts are on one side of the plane (Including the plane itself)
@@ -144,7 +147,7 @@ void ASimpleVoxel::GenerateFaces()
 					if (l == i || l == j || l == k)
 						continue;
 					res = FVector::PointPlaneDist(verts[l], verts[i], p_norm);
-					if (FMath::Abs(res) < 1)
+					if (FMath::Abs(res) < epsilon)
 						in_plane.Emplace(l);
 					else if (res >= 0) pos = true;
 					else if (res < 0) neg = true;
@@ -153,21 +156,18 @@ void ASimpleVoxel::GenerateFaces()
 
 				in_plane.Sort();
 				
-				for (int l = 0; l < in_plane.Num(); l++) {
+				ParallelFor(in_plane.Num(), [&](int l) {
 					for (int m = l + 1; m < in_plane.Num(); m++) {
 						for (int n = m + 1; n < in_plane.Num(); n++) {
 							checked_tri[TriFromI(in_plane[l], in_plane[m], in_plane[n])] = true;
 						}
 					}
-				}
+				}, false);
 
 				if (pos && neg) {
 					//UE_LOG(LogTemp, Warning, TEXT("Pos and neg true! %d %d %d"), i, j, k);
 					continue;
 				}
-
-				//for (int i : in_plane)
-					//UE_LOG(LogTemp, Warning, TEXT("%d"), i);
 
 				in_plane_p.Empty();
 				avg = FVector::ZeroVector;
@@ -179,8 +179,6 @@ void ASimpleVoxel::GenerateFaces()
 
 				points_arr.Emplace(in_plane_p);
 				avg_arr.Emplace(avg);
-
-				//faces.Emplace(Face(in_plane_p, avg));
 			}
 		}
 	}
@@ -218,25 +216,25 @@ void ASimpleVoxel::GenerateUVs(FVector2D uv_range, FVector2D point_range, int ro
 
 void ASimpleVoxel::GenerateNormalsAndTans()
 {
-	for (Face& face : faces) {
+	ParallelFor(faces.Num(), [&](int32 i) {
 		TArray<FProcMeshTangent> tans_tmp = TArray<FProcMeshTangent>();
 		TArray<FVector> norms_tmp = TArray<FVector>();
-		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(face.GetPoints(), face.GetTris(), face.GetUVs(), norms_tmp, tans_tmp);
-		face.SetNormals(norms_tmp);
-		face.SetTangents(tans_tmp);
-	}
+		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(faces[i].GetPoints(), faces[i].GetTris(), faces[i].GetUVs(), norms_tmp, tans_tmp);
+		faces[i].SetNormals(norms_tmp);
+		faces[i].SetTangents(tans_tmp);
+	}, false);
 }
 
 //Colors don't even seem to be used, so I just throw random colors on the points
 //Maybe this is related to vertex painting, but I doubt it
 void ASimpleVoxel::GenerateColors()
 {
-	for (Face& face : faces) {
+	ParallelFor(faces.Num(), [&](int32 i) {
 		TArray<FLinearColor> colors_tmp = TArray<FLinearColor>();
-		for (int i = 0; i < face.NumPoints(); ++i)
+		for (int i = 0; i < faces[i].NumPoints(); ++i)
 			colors_tmp.Emplace(FLinearColor(FMath::FRand(), FMath::FRand(), FMath::FRand()));
-		face.SetColors(colors_tmp);
-	}
+		faces[i].SetColors(colors_tmp);
+	}, false);
 }
 
 void ASimpleVoxel::CreateVoxel()
