@@ -16,6 +16,8 @@ public:
 	~Face();
 
 
+	TArray<int32> GetTris();
+
 	TArray<FVector> GetNormals();
 	void SetNormals(TArray<FVector> normals);
 
@@ -34,7 +36,7 @@ private:
 	FVector furthest;
 
 	// Stuff relating to creating the face as a procedural generated plane
-	TArray<int32> pt_trip; // Triplet of points that make a triangle
+	TArray<int32> tris; // Triplet of points that make a triangle
 	TArray<FVector> normals;
 	TArray<FProcMeshTangent> tangents;
 	TArray<FVector2D> uvs;

@@ -22,6 +22,11 @@ Face::~Face()
 {
 }
 
+TArray<int32> Face::GetTris()
+{
+	return tris;
+}
+
 TArray<FVector> Face::GetNormals()
 {
 	return normals;
@@ -65,4 +70,31 @@ void Face::SetColors(TArray<FLinearColor> colors)
 // Internal function
 void Face::GenerateTris()
 {
+	TArray<int32> idxs;
+	FVector norm;
+	float f_dist, s_dist;
+
+	tris.Empty();
+
+	for (int i = 0; i < points.Num(); i++)
+		idxs.Emplace(i);
+
+
+	while (idxs.Num() >= 3) {
+		norm = FVector::CrossProduct(points[idxs[1]] - points[idxs[0]], points[idxs[2]] - points[idxs[0]]).GetSafeNormal();
+		norm.Normalize();
+
+		if ((offset + norm).Size() >= (offset - norm).Size())
+			tris.Append({ idxs[2], idxs[1], idxs[0] });
+		else
+			tris.Append({ idxs[0], idxs[1], idxs[2] });
+
+		f_dist = (points[idxs[2]] - points[idxs[0]]).Size();
+		s_dist = (points[idxs[2]] - points[idxs[1]]).Size();
+		if (f_dist < s_dist)
+			idxs.RemoveAt(0);
+		else
+			idxs.RemoveAt(1);
+
+	}
 }
