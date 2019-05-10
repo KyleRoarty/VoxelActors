@@ -88,6 +88,15 @@ TArray<Face> ASimpleVoxel::GetFaces()
 	return faces;
 }
 
+int16 ASimpleVoxel::ConnectTo(ASimpleVoxel other, int32 face_i, int32 face_o)
+{
+	FRotator rotation = FRotator::ZeroRotator;
+	if (faces[face_i].CanAttach(other.GetFaces()[face_o], rotation)){
+		return 0;
+	}
+	return 1;
+}
+
 //a < b < c
 //Indexes linear array of triangles from the three points defining the triangle
 int ASimpleVoxel::TriFromI(int a, int b, int c) {
@@ -248,7 +257,7 @@ void ASimpleVoxel::CreateVoxel()
 	for (int i = 0; i < faces.Num(); i++) {
 		mesh->SetMaterial(i, MyMaterial);
 		mesh->CreateMeshSection_LinearColor(i, faces[i].GetPoints(), faces[i].GetTris(), faces[i].GetNormals(),
-											   faces[i].GetUVs(), faces[i].GetColors(), faces[i].GetTangents(), true);
+											   faces[i].GetUVs(), TArray<FLinearColor>(), TArray<FProcMeshTangent>(), true);
 	}
 	
 	//These are all needed in order to have physics work on the object

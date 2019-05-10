@@ -87,6 +87,30 @@ void Face::SetColors(TArray<FLinearColor> colors)
 	this->colors = colors;
 }
 
+bool Face::CanAttach(Face other, FRotator & rotation)
+{
+	if (points.Num() != other.NumPoints())
+		return false;
+
+	Face other_cpy = Face(other);
+
+	TArray<FVector> pts = TArray<FVector>(other_cpy.GetPoints());
+	FVector from = FVector(other_cpy.GetNormals()[0]);
+	FVector to = FVector(-1 * GetNormals()[0]);
+
+	if (from != to) {
+		FVector axis = FVector::CrossProduct(from, to);
+		float rot = FMath::Acos(FVector::DotProduct(from, to)); // from, to are both unit vectors
+
+		for (FVector& pt : pts) {
+			pt.RotateAngleAxis(rot, axis);
+		}
+	}
+	//pts[0].RotateAngleAxis
+
+	return false;
+}
+
 // Internal function
 void Face::GenerateTris()
 {

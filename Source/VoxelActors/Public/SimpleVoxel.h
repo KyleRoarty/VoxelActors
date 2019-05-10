@@ -34,6 +34,9 @@ public:
 	TArray<TArray<FLinearColor>> GetColors();
 	TArray<Face> GetFaces();
 
+	// Other voxel, face idx internal, face idx for other voxel
+	int16 ConnectTo(ASimpleVoxel other, int32 face_i, int32 face_o);
+
 private:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

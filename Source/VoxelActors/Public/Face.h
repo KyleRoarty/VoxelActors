@@ -33,6 +33,9 @@ public:
 	TArray<FLinearColor> GetColors();
 	void SetColors(TArray<FLinearColor> colors);
 
+	//returns true if can attach, fills rotation with rotation needed for attaching to work
+	bool CanAttach(Face other, FRotator &rotation);
+
 private:
 	TArray<FVector> points;
 	TArray<FVector> ret_points;
