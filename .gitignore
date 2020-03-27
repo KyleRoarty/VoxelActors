@@ -16,3 +16,20 @@ Saved/*
 *.suo
 *.xcodeproj
 *.xcworkspace
+
+# Linux, vscode, Qtcreator ignores
+Makefile
+CMakeLists.txt
+
+.kdev4/
+.vscode/
+
+*workspace
+*CodeCompletionFolders.txt
+*CodeLitePreProcessor.txt
+
+*.kdev4
+*.pro
+*.pro.user
+
+*.pri
