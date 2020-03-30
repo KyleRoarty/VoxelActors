@@ -12,7 +12,7 @@ AVoxelSpawner::AVoxelSpawner()
 	mesh = CreateDefaultSubobject<UMeshComponent>(TEXT("SpawnerMesh"));
 	RootComponent = mesh;
 
-	constraintComp = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("Physics constraint"));
+    //constraintComp = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("Physics constraint"));
 }
 
 // Called when the game starts or when spawned
@@ -21,34 +21,35 @@ void AVoxelSpawner::BeginPlay()
 	Super::BeginPlay();
 	vox1 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(FVector(10, 100, 160)));
 	if (vox1 != nullptr) {
-		vox1->SetVerts(Shapes::Cube(), 20.0, true);
+        vox1->SetVerts(Shapes::Cube_Points(), 20.0, false);
+        vox1->SetEdges(Shapes::Cube_Segs());
 		vox1->FinishSpawning(FTransform(FVector(10, 100, 160)));
 	}
-	vox2 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(vox1->GetActorLocation()+FVector(0, vox1->GetBounds().Y, 0)));
-	if (vox2 != nullptr) {
-		vox2->SetVerts(Shapes::Cube(), 20.0, false);
-		vox2->FinishSpawning(FTransform(vox1->GetActorLocation() + FVector(0, vox1->GetBounds().Y, 0)));
-	}
+    //vox2 = GetWorld()->SpawnActorDeferred<ASimpleVoxel>(ASimpleVoxel::StaticClass(), FTransform(vox1->GetActorLocation()+FVector(0, vox1->GetBounds().Y, 0)));
+    //if (vox2 != nullptr) {
+    //	vox2->SetVerts(Shapes::Cube_Points(), 20.0, false);
+    //	vox2->FinishSpawning(FTransform(vox1->GetActorLocation() + FVector(0, vox1->GetBounds().Y, 0)));
+    //}
 
-	FConstraintInstance constraints;
+    //FConstraintInstance constraints;
 
-	constraints.SetDisableCollision(false);
+    //constraints.SetDisableCollision(false);
 
-	constraints.SetLinearXMotion(ELinearConstraintMotion::LCM_Locked);
-	constraints.SetLinearYMotion(ELinearConstraintMotion::LCM_Free);
-	constraints.SetLinearZMotion(ELinearConstraintMotion::LCM_Locked);
+    //constraints.SetLinearXMotion(ELinearConstraintMotion::LCM_Locked);
+    //constraints.SetLinearYMotion(ELinearConstraintMotion::LCM_Free);
+    //constraints.SetLinearZMotion(ELinearConstraintMotion::LCM_Locked);
 
-	constraints.SetAngularSwing1Motion(EAngularConstraintMotion::ACM_Locked);
-	constraints.SetAngularSwing2Motion(EAngularConstraintMotion::ACM_Locked);
-	constraints.SetAngularTwistMotion(EAngularConstraintMotion::ACM_Locked);
+    //constraints.SetAngularSwing1Motion(EAngularConstraintMotion::ACM_Locked);
+    //constraints.SetAngularSwing2Motion(EAngularConstraintMotion::ACM_Locked);
+    //constraints.SetAngularTwistMotion(EAngularConstraintMotion::ACM_Locked);
 
-	constraintComp->ConstraintInstance = constraints;
+    //constraintComp->ConstraintInstance = constraints;
 
-	constraintComp->SetLinearPositionTarget(vox1->GetActorLocation());
-	constraintComp->SetLinearPositionDrive(false, true, false);
-	constraintComp->SetLinearDriveParams(10000, 0, 0);
+    //constraintComp->SetLinearPositionTarget(vox1->GetActorLocation());
+    //constraintComp->SetLinearPositionDrive(false, true, false);
+    //constraintComp->SetLinearDriveParams(10000, 0, 0);
 
-	constraintComp->SetConstrainedComponents(vox1->mesh, NAME_None, vox2->mesh, NAME_None);
+    //constraintComp->SetConstrainedComponents(vox1->mesh, NAME_None, vox2->mesh, NAME_None);
 }
 
 // Called every frame
