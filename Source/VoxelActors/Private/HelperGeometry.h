@@ -9,14 +9,14 @@
  */
 struct FPoint
 {
-    uint32 Number;
+    int32 Number;
 
     FVector Coordinate;
 
-    TArray<FPoint*> Connections;
+    TArray<TSharedRef<FPoint>> Connections;
 
-    explicit FPoint(FVector InFVector)
-        : Coordinate(InFVector), Connections()
+    explicit FPoint(FVector InFVector, uint32 Number)
+        : Number(Number), Coordinate(InFVector), Connections()
     {
     }
 };
@@ -25,34 +25,38 @@ class FLine
 {
 
 public:
-    FLine(FPoint* Start, FPoint* End, uint32 NumPoints);
-    ~Fline();
+    FLine(TSharedRef<FPoint> Start, TSharedRef<FPoint> End, uint32 NumPoints);
+    ~FLine();
 
-    void SawPoint(const FPoint& SeenPoint);
+    void SawPoint(TSharedRef<FPoint> SeenPoint);
+    void SawPoints(TArray<TSharedRef<FPoint>> SeenPoints);
 
-    const bool HaveSeenAllPoints();
+    bool HasSeenPoint(TSharedRef<FPoint> CheckPoint) ;
+
+    bool HaveSeenAllPoints() ;
 
     void IncNumFacesConnected();
-    const uint8 GetNumFacesConnected();
+    uint8 GetNumFacesConnected() ;
 
 private:
-    FPoint* StartPoint;
-    FPoint* EndPoint;
+    TSharedRef<FPoint> StartPoint;
+    TSharedRef<FPoint> EndPoint;
 
     uint8 NumFacesConnected;
 
-    TBitArray bPointsNotSeen;
+    TBitArray<FDefaultBitArrayAllocator> bPointsNotSeen;
 };
 
 class FFace
 {
 public:
-    FFace(const TArray<FPoint*>& PointsList, const TArray<FLine*>& LineList);
+    FFace(TArray<TSharedRef<FPoint>> PointsList,  TArray<TSharedRef<FLine>> LineList);
     ~FFace();
 
-    const bool IsExternalFace();
+    bool IsExternalFace() ;
+    TArray< TSharedRef<FPoint>> GetOrderedPoints();
 
 private:
-    TArray<FPoint*> OrderedPoints;
-    TArray<FLine*> Perimeter;
+    TArray<TSharedRef<FPoint>> OrderedPoints;
+    TArray<TSharedRef<FLine>> Perimeter;
 };

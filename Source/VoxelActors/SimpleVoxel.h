@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "KismetProceduralMeshLibrary.h"
 #include "ProceduralMeshComponent.h"
+#include "Private/HelperGeometry.h"
 //Must be last include
 #include "SimpleVoxel.generated.h"
 
@@ -23,49 +24,46 @@ public:
 	UPROPERTY(EditAnywhere)
 		UMaterial *MyMaterial;
 
-	void SetVerts(TArray<FVector> verts, float scale, bool grow);
+    void SetVerts(const TArray<FVector>& verts_, const float& scale, const bool& grow_);
+    void SetEdges(const TArray<TTuple<int, int>>& edges);
 
 	FVector GetBounds();
 	TArray<TArray<FVector2D>> GetUVs();
-	TArray<TArray<FVector>> GetVerts();
 	TArray<TArray<FVector>> GetNormals();
 	TArray<TArray<FProcMeshTangent>> GetTangents();
-	TArray<TArray<FLinearColor>> GetColors();
-	TArray<TArray<int32>> GetFaces();
+    TArray<TArray<FLinearColor>> GetColors();
 
 private:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	int TriFromI(int a, int b, int c);
-	int TriFromI(int a, int b, int c, int n);
-
-	TArray<int32> SimpleTris(TArray<int32> idxs);
-
 	void GenerateFaces();
 	void GenerateUVs(FVector2D uv_range, FVector2D point_range, int row, int col);
-	void GenerateVerts();
 	void GenerateNormalsAndTans();
 	void GenerateColors();
 	
 	void CreateVoxel();
 	
 	FVector trans;
-	TArray<FVector> verts;
-	TArray<FVector> sort_verts;
-	FVector avg_sort_vert;
-	int num_v;
-	bool grow;
+    TArray<FVector> verts;
+    bool grow;
 
 	FVector bounds;
 
-	TArray<TArray<FVector>> verts_arr;
+    TArray<TSharedRef<FPoint>> Points;
+    TArray<FVector> PointsPosition;
+    TMap<TBitArray<FDefaultBitArrayAllocator>, TSharedRef<FLine>> LineSegments;
+    TArray<TSharedRef<FFace>> Faces;
+
+    TBitArray<FDefaultBitArrayAllocator> MakeSegmentKey(TSharedRef<FPoint>& Start,
+                                                        TSharedRef<FPoint>& End);
+    void Triangulate();
+
 	TArray<TArray<FVector>> normals;
 	TArray<TArray<FVector2D>> uvs;
 	TArray<TArray<FProcMeshTangent>> tans;
 	TArray<TArray<FLinearColor>> colors;
-	TArray<TArray<int32>> face_t;
-	TArray<TArray<int32>> face_i;
+    TArray<TArray<int32>> face_t;
 
 public:	
 	// Called every frame
