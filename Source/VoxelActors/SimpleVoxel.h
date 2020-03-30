@@ -45,7 +45,6 @@ private:
 	void CreateVoxel();
 	
 	FVector trans;
-    TArray<FVector> verts;
     bool grow;
 
 	FVector bounds;

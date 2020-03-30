@@ -16,11 +16,10 @@ ASimpleVoxel::ASimpleVoxel()
 
 	trans = FVector(0);
 	bounds = FVector(0);
-	verts = { FVector(0) };
 	grow = false;
 
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("VoxelMesh"));
-	mesh->bUseAsyncCooking = false;
+    mesh->bUseAsyncCooking = true;
 	RootComponent = mesh;
 
 
@@ -173,7 +172,9 @@ void ASimpleVoxel::Triangulate()
 {
     for(TSharedRef<FFace> Face : Faces){
         TArray<TSharedRef<FPoint>> TmpPoints = Face->GetOrderedPoints();
-        face_t.Emplace(TArray<int32>{TmpPoints[0]->Number, TmpPoints[1]->Number, TmpPoints[2]->Number,
+        face_t.Emplace(TArray<int32>{TmpPoints[1]->Number, TmpPoints[2]->Number, TmpPoints[0]->Number,
+                                     TmpPoints[1]->Number, TmpPoints[0]->Number, TmpPoints[2]->Number,
+                                     TmpPoints[2]->Number, TmpPoints[0]->Number, TmpPoints[3]->Number,
                                      TmpPoints[2]->Number, TmpPoints[3]->Number, TmpPoints[0]->Number});
     }
 }
@@ -229,18 +230,19 @@ void ASimpleVoxel::CreateVoxel()
     //GenerateColors();
 	GenerateNormalsAndTans();
 
-	mesh->bUseComplexAsSimpleCollision = false;
 
     for (int i = 0; i < Faces.Num(); i++) {
 		mesh->SetMaterial(i, MyMaterial);
-        mesh->CreateMeshSection_LinearColor(i, PointsPosition, face_t[i], normals[i], uvs[i], TArray<FLinearColor>(), tans[i], true);
-	}
+        mesh->CreateMeshSection_LinearColor(i, PointsPosition, face_t[i], normals[i], uvs[i], TArray<FLinearColor>(), tans[i], false);
+        //mesh->CreateMeshSection_LinearColor(i, PointsPosition, face_t[i], TArray<FVector>(), uvs[i], TArray<FLinearColor>(), TArray<FProcMeshTangent>(), false);
+    }
 	
 	//These are all needed in order to have physics work on the object
-	mesh->AddCollisionConvexMesh(verts);
+    mesh->bUseComplexAsSimpleCollision = false;
+    mesh->AddCollisionConvexMesh(PointsPosition);
 
-	mesh->SetSimulatePhysics(true);
-	mesh->SetEnableGravity(true);
+    mesh->SetSimulatePhysics(true);
+    mesh->SetEnableGravity(true);
 }
 
 // Called when the game starts or when spawned
